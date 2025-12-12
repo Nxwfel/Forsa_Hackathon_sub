@@ -9,14 +9,9 @@ const LandingPage = () => {
   const [isFocused, setIsFocused] = useState(false);
   const isActive = isFocused || query.trim().length > 0;
 
-  // temp username – later you can use real user info
   const username = "frontend-user";
 
-  // enable WS as soon as LandingPage is mounted
-  const { messages, sendMessage, connected } = useChatWebSocket(
-    username,
-    true
-  );
+  const { messages, sendMessage, connected } = useChatWebSocket(username, true);
 
   const handleSend = () => {
     if (!query.trim()) return;
@@ -31,194 +26,212 @@ const LandingPage = () => {
     }
   };
 
+  const suggested = [
+    { question: "Comment puis-je vérifier ma consommation de données ?" },
+    { question: "Quels sont les forfaits Internet disponibles ?" },
+    { question: "Comment puis-je activer un nouveau service ?" },
+  ];
+
+  const offers = [
+    { title: "Offre De 100GB", partner: "DTP" },
+    { title: "Offre Mobile 50GB", partner: "Entreprises" },
+    { title: "Fibre Optique Premium", partner: "Résidentiel" },
+    { title: "Pack Famille 200GB", partner: "Familles" },
+  ];
+
   return (
-    <AnimatePresence>
-      <div className="bg-white flex flex-col justify-center items-center">
-        <div className="ml-[20vw] w-[60vw] flex flex-col justify-center items-center">
-          {/* Header */}
-          <div className="flex">
-            <span className="text-7xl mt-[5vh] font-semibold text-[#1f235a] flex justify-center items-center">
-              Assistant Intelligent{" "}
-              <span
-                className={`ml-3 text-2xl ${
-                  connected ? "text-green-500" : "text-red-500"
-                }`}
-              >
-                ●
+      <AnimatePresence>
+        <div className="w-full min-h-full bg-white">
+          {/* Page container */}
+          <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-10 py-8">
+            {/* Header */}
+            <div className="flex flex-col items-center text-center">
+              <h1 className="text-4xl sm:text-5xl lg:text-7xl font-semibold text-[#1f235a] leading-tight">
+                Assistant Intelligent
+              </h1>
+
+              <div className="flex items-center justify-center gap-3 -mt-1 sm:-mt-2">
+              <span className="text-4xl sm:text-5xl lg:text-7xl font-semibold text-[#1f235a]">
+                D&apos;
               </span>
-            </span>
-          </div>
-          <span className="text-7xl -mt-10 font-semibold text-[#1f235a] flex justify-center items-center">
-            D&apos;<img src={Logo} alt="" className="size-[30vh]" />{" "}
-          </span>
+                <img
+                    src={Logo}
+                    alt="logo"
+                    className="h-16 sm:h-20 lg:h-28 w-auto object-contain"
+                />
+              </div>
 
-          {/* Chat input */}
-          <div className="h-[9vh] w-[50vw] flex justify-between items-center mt-[7vh] rounded-3xl border border-gray-300 bg-white/70 backdrop-blur">
-            <input
-              type="text"
-              placeholder="Posez votre question ici..."
-              className="poppins text-gray-700 h-full w-full bg-transparent px-5 text-md outline-none rounded-3xl"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => setIsFocused(false)}
-              onKeyDown={handleKeyDown}
-            />
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="gray"
-              className="size-[2.5vw] hover:stroke-[#1f235a] mr-4 cursor-pointer hover:-rotate-30 transition-all"
-              onClick={handleSend}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="m12.75 15 3-3m0 0-3-3m3 3h-7.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-              />
-            </svg>
-          </div>
+              {/* status */}
+              <div className="mt-3">
+              <span
+                  className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-medium border ${
+                      connected
+                          ? "bg-[#E7F6EF] text-[#088141] border-[#0881414D]"
+                          : "bg-gray-100 text-gray-600 border-gray-200"
+                  }`}
+              >
+                <span
+                    className={`h-2 w-2 rounded-full ${
+                        connected ? "bg-[#088141] animate-pulse" : "bg-gray-400"
+                    }`}
+                />
+                {connected ? "Connecté" : "Connexion…"}
+              </span>
+              </div>
+            </div>
 
-          {/* Messages area */}
-          <div className="w-[50vw] max-h-[40vh] mt-4 mb-6 overflow-y-auto rounded-2xl border border-gray-200/60 bg-gray-50/60 p-4 space-y-2">
-            {messages.length === 0 && (
-              <p className="text-sm text-gray-400 text-center">
-                Commencez la conversation en posant une question ci-dessus.
-              </p>
-            )}
-
-            {messages.map((m, idx) => (
+            {/* Chat input */}
+            <div className="mt-10 flex justify-center">
               <div
-                key={idx}
-                className={
-                  m.from === "user"
-                    ? "text-right"
-                    : m.from === "backend"
-                    ? "text-left"
-                    : "text-center text-xs text-gray-400"
-                }
+                  className={`w-full max-w-3xl flex items-center rounded-3xl border bg-white/70 backdrop-blur px-3 sm:px-4 py-2 sm:py-3 transition-all ${
+                      isActive
+                          ? "border-[#1f235a] shadow-lg"
+                          : "border-gray-300 shadow-sm"
+                  }`}
               >
-                {m.from === "system" ? (
-                  <span>{m.text}</span>
-                ) : (
-                  <span
-                    className={
-                      m.from === "user"
-                        ? "inline-block bg-[#1f235a] text-white px-3 py-2 rounded-2xl max-w-[70%] text-sm"
-                        : "inline-block bg-white text-gray-800 px-3 py-2 rounded-2xl shadow-sm max-w-[70%] text-sm"
-                    }
+                <input
+                    type="text"
+                    placeholder="Posez votre question ici..."
+                    className="poppins text-gray-700 w-full bg-transparent px-2 sm:px-3 text-sm sm:text-base outline-none"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
+                    onKeyDown={handleKeyDown}
+                />
+
+                <button
+                    type="button"
+                    onClick={handleSend}
+                    className="shrink-0 ml-2 sm:ml-3 rounded-full p-2 sm:p-2.5 hover:bg-[#1f235a0f] transition"
+                    aria-label="Envoyer"
+                    title="Envoyer"
+                >
+                  <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1.5}
+                      stroke={isActive ? "#1f235a" : "gray"}
+                      className="w-7 h-7 sm:w-8 sm:h-8 hover:-rotate-12 transition-transform"
                   >
-                    {m.text}
+                    <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="m12.75 15 3-3m0 0-3-3m3 3h-7.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Suggested questions */}
+            <div className="mt-8">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {suggested.map((item, index) => (
+                    <motion.button
+                        key={index}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.12 }}
+                        className="text-left rounded-2xl border border-gray-200 bg-white px-4 py-4 shadow-sm hover:shadow-xl hover:border-[#1f235a] hover:-translate-y-1 transition-all"
+                        onClick={() => {
+                          setQuery(item.question);
+                          sendMessage(item.question);
+                        }}
+                    >
+                  <span className="text-sm sm:text-base text-[#111]">
+                    {item.question}
                   </span>
+                    </motion.button>
+                ))}
+              </div>
+            </div>
+
+            {/* Messages area */}
+            <div className="mt-6 flex justify-center">
+              <div className="w-full max-w-3xl max-h-[40vh] overflow-y-auto rounded-2xl border border-gray-200/60 bg-gray-50/60 p-4 space-y-2">
+                {messages.length === 0 && (
+                    <p className="text-sm text-gray-400 text-center">
+                      Commencez la conversation en posant une question ci-dessus.
+                    </p>
                 )}
-              </div>
-            ))}
-          </div>
 
-          {/* Suggested questions */}
-          <div className="flex justify-center items-center">
-            {[
-              {
-                question: "Comment puis-je vérifier ma consommation de données ?",
-              },
-              {
-                question: "Quels sont les forfaits Internet disponibles ?",
-              },
-              {
-                question: "Comment puis-je activer un nouveau service ?",
-              },
-            ].map((item, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.2 }}
-                className="w-full flex flex-col p-3 shadow-lg rounded-xl border border-gray-300/50 justify-center items-center m-10 transition-transform duration-200 hover:-translate-y-1 hover:shadow-2xl hover:border-[#1f235a] hover:bg-gray-50 cursor-pointer"
-                onClick={() => {
-                  setQuery(item.question);
-                  sendMessage(item.question);
-                }}
-              >
-                {item.question}
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Static offers cards (you can later connect to backend) */}
-          <div className="w-full h-fit">
-            <motion.div
-              initial={{ opacity: 0, x: 10 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              className="w-full h-[20vh] flex rounded-2xl bg-gradient-to-tr from-[#1f235a] to-[#292f81]"
-            >
-              <img src={Logo} alt="" className="size-[10vw] ml-[2vw]" />
-              <div className="flex flex-col text-white">
-                <h1 className="font-semibold text-4xl mt-[3vh]">
-                  Offre De 100GB
-                </h1>
-                <p className="font-light ">On convension avec : DTP</p>
-                <p className="font-light ">
-                  On offre cet promotions pour les clients de traveaux public
-                </p>
+                {messages.map((m, idx) => (
+                    <div
+                        key={idx}
+                        className={
+                          m.from === "user"
+                              ? "text-right"
+                              : m.from === "backend"
+                                  ? "text-left"
+                                  : "text-center text-xs text-gray-400"
+                        }
+                    >
+                      {m.from === "system" ? (
+                          <span>{m.text}</span>
+                      ) : (
+                          <span
+                              className={
+                                m.from === "user"
+                                    ? "inline-block bg-[#1f235a] text-white px-3 py-2 rounded-2xl max-w-[85%] sm:max-w-[70%] text-sm"
+                                    : "inline-block bg-white text-gray-800 px-3 py-2 rounded-2xl shadow-sm max-w-[85%] sm:max-w-[70%] text-sm"
+                              }
+                          >
+                      {m.text}
+                    </span>
+                      )}
+                    </div>
+                ))}
               </div>
-            </motion.div>
+            </div>
 
-            <motion.div
-              initial={{ opacity: 0, x: -10 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              className="w-full h-[20vh] shadow-xl flex mt-[3vh] rounded-2xl bg-gradient-to-tr from-[#1f235a] to-[#292f81]"
-            >
-              <img src={Logo} alt="" className="size-[10vw] ml-[2vw]" />
-              <div className="flex flex-col text-white">
-                <h1 className="font-semibold text-4xl mt-[3vh]">
-                  Offre De 100GB
-                </h1>
-                <p className="font-light ">On convension avec : DTP</p>
-                <p className="font-light ">
-                  On offre cet promotions pour les clients de traveaux public
-                </p>
-              </div>
-            </motion.div>
+            {/* Offers cards */}
+            <div className="mt-10">
+              <div className="grid grid-cols-1 gap-5">
+                {offers.map((o, i) => (
+                    <motion.div
+                        key={i}
+                        initial={{ opacity: 0, x: i % 2 === 0 ? 12 : -12 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true, amount: 0.2 }}
+                        transition={{ duration: 0.35 }}
+                        className="w-full rounded-2xl bg-gradient-to-tr from-[#1f235a] to-[#292f81] shadow-xl overflow-hidden"
+                    >
+                      <div className="flex flex-col sm:flex-row items-center sm:items-stretch gap-4 p-5 sm:p-6">
+                        <div className="flex items-center justify-center sm:justify-start sm:w-40">
+                          <img
+                              src={Logo}
+                              alt=""
+                              className="h-20 sm:h-24 w-auto object-contain"
+                          />
+                        </div>
 
-            <motion.div
-              initial={{ opacity: 0, x: 10 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              className="w-full h-[20vh] shadow-xl flex mt-[3vh] rounded-2xl bg-gradient-to-tr from-[#1f235a] to-[#292f81]"
-            >
-              <img src={Logo} alt="" className="size-[10vw] ml-[2vw]" />
-              <div className="flex flex-col text-white">
-                <h1 className="font-semibold text-4xl mt-[3vh]">
-                  Offre De 100GB
-                </h1>
-                <p className="font-light ">On convension avec : DTP</p>
-                <p className="font-light ">
-                  On offre cet promotions pour les clients de traveaux public
-                </p>
-              </div>
-            </motion.div>
+                        <div className="flex-1 text-white text-center sm:text-left">
+                          <h3 className="font-semibold text-2xl sm:text-3xl">
+                            {o.title}
+                          </h3>
+                          <p className="font-light mt-1">
+                            En convention avec : {o.partner}
+                          </p>
+                          <p className="font-light mt-1">
+                            Offre promotionnelle dédiée à certains segments clients.
+                          </p>
 
-            <motion.div
-              initial={{ opacity: 0, x: -10 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              className="w-full h-[20vh] shadow-xl flex mt-[3vh] rounded-2xl bg-gradient-to-tr from-[#1f235a] to-[#292f81]"
-            >
-              <img src={Logo} alt="" className="size-[10vw] ml-[2vw]" />
-              <div className="flex flex-col text-white">
-                <h1 className="font-semibold text-4xl mt-[3vh]">
-                  Offre De 100GB
-                </h1>
-                <p className="font-light ">On convension avec : DTP</p>
-                <p className="font-light ">
-                  On offre cet promotions pour les clients de traveaux public
-                </p>
+                          <div className="mt-3">
+                        <span className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-xs">
+                          Offre
+                        </span>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                ))}
               </div>
-            </motion.div>
+            </div>
           </div>
         </div>
-      </div>
-    </AnimatePresence>
+      </AnimatePresence>
   );
 };
 
