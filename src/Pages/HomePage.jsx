@@ -88,11 +88,13 @@ useEffect(() => {
           animate={{y:0, opacity:1}}
           whileHover={{scale:1.1}}
             src={Logo} alt=""  className='size-[5vw] mt-[2vh] cursor-pointer'/>
+            <Link to={'/chatbot'}>
             <motion.h1
             initial={{scale:1,y:-10, opacity:0}}
           animate={{y:0, opacity:1}}
           whileHover={{scale:1.1}}
             className='font-semibold text-sm  text-[#088141] cursor-pointer'>Assistant</motion.h1>
+            </Link>
       </div>
         <div ref={heroRef} className='w-[80vw] h-[70vh] rounded-3xl mt-[20vh] flex flex-col justify-center items-center'>
             <motion.h1

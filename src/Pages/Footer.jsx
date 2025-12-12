@@ -1,5 +1,5 @@
 import React from 'react'
-
+import {Link} from 'react-router-dom'
 const Footer = () => {
   return (
     <div 
@@ -10,6 +10,7 @@ const Footer = () => {
         <h1 className='poppins text-8xl text-[#1F235A] font-semibold'>
             Essayer l'Assistant Maintenant !
         </h1>
+        <Link to={'/chatbot'}>
         <button
         class="cursor-pointer mt-[7vh] bg-gradient-to-b from-teal-500 to-green-600 px-6 py-3 rounded-xl border-[1px] border-green-300-500 text-white font-medium group"
         >
@@ -26,6 +27,7 @@ const Footer = () => {
             </p>
         </div>
         </button>
+        </Link>
 
       </div>
     </div>
