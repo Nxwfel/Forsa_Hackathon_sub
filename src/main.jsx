@@ -6,10 +6,13 @@ import App from "./App.jsx";
 import Preloader from "./Components/Preloader.jsx";
 import HomePage from "./Pages/HomePage.jsx";
 import LandingPage from "./Pages/LandingPage.jsx";
+import { useEffect } from "react";
+import Lenis from 'lenis';
 
 const router = createBrowserRouter([
   { path: "/",element: <LandingPage />, },
 ]);
+
 
 const root = document.getElementById("root");
 

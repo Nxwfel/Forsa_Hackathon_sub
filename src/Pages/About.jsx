@@ -67,7 +67,7 @@ const About = () => {
   ]
 
   return (
-    <div ref={containerRef} className='relative bg-white w-full flex'>
+    <div ref={containerRef} id='About' className='relative bg-white w-full flex'>
       {/* Left Side - Will be pinned by GSAP */}
       <div 
         ref={leftSideRef}

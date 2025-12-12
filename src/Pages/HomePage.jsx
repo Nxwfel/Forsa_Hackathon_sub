@@ -9,6 +9,8 @@ import Ensia from '../Assets/ensia.png'
 import Huawei from '../Assets/huawei.svg'
 import AlgerieTelecom from '../Assets/Algerie_Telecom.svg'
 import Particles from '../Components/Particles.jsx';
+import {Link as Scroll} from 'react-scroll';
+import {Link} from 'react-router-dom'
 const HomePage = () => {
     const [showchatbot, setShowchatbot] = useState(false);
 
@@ -62,28 +64,25 @@ useEffect(() => {
   return (
     <div className='h-screen w-screen flex flex-col justify-start items-center overflow-x-hidden'>
         <div style={{ width: '100%', height: '100%', position: 'absolute' }}>
-  <Particles
-    particleColors={['#ffffff', '#ffffff']}
-    particleCount={200}
-    particleSpread={10}
-    speed={0.1}
-    particleBaseSize={100}
-    moveParticlesOnHover={true}
-    alphaParticles={false}
-    disableRotation={false}
-  />
-</div>
+        <Particles
+            particleColors={['#ffffff', '#ffffff']}
+            particleCount={200}
+            particleSpread={10}
+            speed={0.1}
+            particleBaseSize={100}
+            moveParticlesOnHover={true}
+            alphaParticles={false}
+            disableRotation={false}
+        />
+        </div>
       <div className='w-[40vw] h-[10vh] z-10 rounded-full justify-center items-center gap-[2vw] flex'>
-          <motion.h1 
-          initial={{scale:1,y:-10, opacity:0}}
-          animate={{y:0, opacity:1}}
-          whileHover={{scale:1.1}}
-          className='font-semibold text-sm text-[#088141] hover:white -mt-[1vh] cursor-pointer'>Acceuil</motion.h1>
+          <Scroll to="About" smooth={true} duration={500}>
             <motion.h1
             initial={{scale:1,y:-10, opacity:0}}
-          animate={{y:0, opacity:1}}
-          whileHover={{scale:1.1}}
+            animate={{y:0, opacity:1}}
+            whileHover={{scale:1.1}}
             className='font-semibold text-sm text-[#088141] cursor-pointer'>A propos</motion.h1>
+          </Scroll>
             <motion.img
             initial={{scale:1,y:-10, opacity:0}}
           animate={{y:0, opacity:1}}
@@ -93,12 +92,7 @@ useEffect(() => {
             initial={{scale:1,y:-10, opacity:0}}
           animate={{y:0, opacity:1}}
           whileHover={{scale:1.1}}
-            className='font-semibold text-sm  text-[#088141] cursor-pointer'>Contact</motion.h1>
-          <motion.h1
-          initial={{scale:1,y:-10, opacity:0}}
-          animate={{y:0, opacity:1}}
-          whileHover={{scale:1.1}}
-          className='font-semibold text-sm text-[#088141] -mt-[1vh] cursor-pointer'>Services</motion.h1>
+            className='font-semibold text-sm  text-[#088141] cursor-pointer'>Assistant</motion.h1>
       </div>
         <div ref={heroRef} className='w-[80vw] h-[70vh] rounded-3xl mt-[20vh] flex flex-col justify-center items-center'>
             <motion.h1

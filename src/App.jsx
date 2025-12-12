@@ -6,7 +6,28 @@ import Historique from './Components/Historique.jsx'
 import DataIntegration from './Components/DataIntegration.jsx'
 import SearchEngine from './Components/SearchEngine.jsx'
 import { motion } from 'framer-motion'
+import { useEffect } from 'react'
+import Lenis from 'lenis';
 function App() {
+    useEffect( () => {
+
+    const lenis = new Lenis()
+
+
+
+    function raf(time) {
+
+      lenis.raf(time)
+
+      requestAnimationFrame(raf)
+
+    }
+
+
+
+    requestAnimationFrame(raf)
+
+  }, [])
    const [tab , setTab] = useState('Chatbot')
   return (
     <div className='h-screen w-screen justify-start items-start flex p-3 px-4 bg-white'>
