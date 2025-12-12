@@ -7,7 +7,7 @@ import Preloader from "./Components/Preloader.jsx";
 import HomePage from "./Pages/HomePage.jsx";
 
 const router = createBrowserRouter([
-  { path: "/",element: <HomePage />, },
+  { path: "/",element: <App/>, },
 ]);
 
 const root = document.getElementById("root");
