@@ -1,465 +1,248 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const initialFormState = {
-    name: "",
-    category: "",
-    type: "",
-    sector: "",
-    partner: "",
-    language: "fr",
-    validFrom: "",
-    validTo: "",
-    description: "",
-    pdfUrl: "",
-    sourceFile: ""
-};
+const ease = [0.16, 1, 0.3, 1];
 
 const DataIntegration = () => {
-    const [form, setForm] = useState(initialFormState);
-    const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState(null);
-    const [error, setError] = useState(null);
+  const [files, setFiles] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState(null);
+  const [error, setError] = useState(null);
 
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setForm((prev) => ({ ...prev, [name]: value }));
-    };
+  // Handle file selection
+  const handleFileChange = (e) => {
+    const selected = Array.from(e.target.files || []);
+    setFiles((prev) => [...prev, ...selected]);
+  };
 
-    // Required: name, category, pdfUrl
-    const validate = () => {
-        if (!form.name.trim()) return false;
-        if (!form.category) return false;
-        return form.pdfUrl.trim();
-    };
+  // Delete a file from the list
+  const handleDeleteFile = (index) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setMessage(null);
-        setError(null);
+  // Simulated upload
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage(null);
+    setError(null);
 
-        if (!validate()) {
-            setError("Please fill all required fields (*) before submitting.");
-            return;
-        }
+    try {
+      if (files.length === 0) throw new Error("Veuillez sélectionner un fichier.");
 
-        setLoading(true);
-        try {
-            const res = await fetch("/api/offers", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    name: form.name,
-                    category: form.category,
-                    type: form.type || null,
-                    sector: form.sector || null,
-                    partner: form.partner || null,
-                    language: form.language || null,
-                    valid_from: form.validFrom || null,
-                    valid_to: form.validTo || null,
-                    description: form.description || null,
-                    pdf_url: form.pdfUrl,
-                    source_file: form.sourceFile || null
-                })
-            });
+      // Simulate upload
+      await new Promise((res) => setTimeout(res, 1000));
 
-            if (!res.ok) {
-                throw new Error(`Server responded with status ${res.status}`);
-            }
+      setMessage("Fichier(s) uploadé(s) avec succès !");
+      setFiles([]);
+    } catch (err) {
+      setError(err.message || "Erreur lors de l’upload.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-            setMessage("Record inserted successfully ✅");
-            setForm(initialFormState);
-        } catch (err) {
-            setError(err.message || "Error while inserting data");
-        } finally {
-            setLoading(false);
-        }
-    };
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45, ease }}
+      className="h-full min-h-screen flex items-start justify-center px-4 py-8 md:py-3"
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.985 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5, ease }}
+        className="w-full max-w-6xl bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-slate-200/70 p-6 md:p-8 space-y-6"
+      >
+        {/* Header */}
+        <motion.header
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.05, ease }}
+          className="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+        >
+          <div className="space-y-2">
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-[#1F235A] leading-tight">
+              Data Integration
+            </h1>
+            <p className="text-sm text-slate-500 max-w-xl">
+              Téléversez vos fichiers et supprimez ceux que vous ne souhaitez pas conserver.
+            </p>
+          </div>
 
-    return (
-        <div className="h-full bg-white ml-[3vw] flex items-center justify-center px-4 py-3">
-            <motion.div 
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5 }}
-                className="w-full bg-white rounded-3xl shadow-lg border border-slate-200 p-6 md:p-8"
+          <div className="flex flex-col items-start md:items-end text-xs gap-2">
+            <span className="uppercase tracking-[0.18em] text-slate-500">
+              Hackathon FORSA TIC
+            </span>
+            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/50 bg-emerald-50 px-3 py-1 text-[11px] font-medium text-emerald-700">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              Intelligent Assistant · Data Layer
+            </span>
+          </div>
+        </motion.header>
+
+        {/* Alerts */}
+        <AnimatePresence mode="popLayout">
+          {message && (
+            <motion.div
+              key="success"
+              initial={{ opacity: 0, y: -6, scale: 0.99 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -6, scale: 0.99 }}
+              transition={{ duration: 0.25, ease }}
+              className="rounded-2xl bg-emerald-50 text-emerald-800 border border-emerald-200 px-4 py-3 text-sm flex items-start gap-2"
             >
-                {/* Top header */}
-                <motion.div 
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6 }}
-                    className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6"
-                >
-                    <div>
-                        <h1 className="text-2xl md:text-6xl font-bold text-[#1F235A]">
-                            Data Integration
-                        </h1>
-                        <p className="text-sm text-slate-500 mt-1">
-                            Phase 3 · Add or update offers, conventions and guides in the
-                            knowledge base.
-                        </p>
-                    </div>
-
-                    <motion.div 
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 0.5, delay: 0.2 }}
-                        className="flex flex-col items-start md:items-end text-xs"
-                    >
-                        <span className="uppercase tracking-wide text-slate-500">
-                            Hackathon FORSA tic
-                        </span>
-                        <span className="mt-1 inline-flex items-center rounded-full border border-emerald-500/60 bg-emerald-50 px-3 py-1 text-[11px] font-medium text-emerald-700">
-                            Intelligent Assistant · Data Layer
-                        </span>
-                    </motion.div>
-                </motion.div>
-
-                {/* Alerts */}
-                <AnimatePresence>
-                    {message && (
-                        <motion.div 
-                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                            transition={{ duration: 0.3 }}
-                            className="mb-4 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 px-4 py-2 text-sm"
-                        >
-                            {message}
-                        </motion.div>
-                    )}
-                    {error && (
-                        <motion.div 
-                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                            transition={{ duration: 0.3 }}
-                            className="mb-4 rounded-xl bg-red-50 text-red-800 border border-red-200 px-4 py-2 text-sm"
-                        >
-                            {error}
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-
-                {/* Main form */}
-                <div className="grid md:grid-cols-3 gap-6">
-                    {/* Left: metadata fields */}
-                    <div className="md:col-span-2 space-y-5">
-                        {/* Name + Category */}
-                        <motion.div 
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.5, delay: 0.1 }}
-                            className="grid md:grid-cols-2 gap-4"
-                        >
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-600 mb-1">
-                                    Name / Title *
-                                </label>
-                                <input
-                                    type="text"
-                                    name="name"
-                                    value={form.name}
-                                    onChange={handleChange}
-                                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F235A]/40 focus:border-[#1F235A] transition-all"
-                                    placeholder="Offre Idoom Fibre Entreprise"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-600 mb-1">
-                                    Category *
-                                </label>
-                                <select
-                                    name="category"
-                                    value={form.category}
-                                    onChange={handleChange}
-                                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1F235A]/40 focus:border-[#1F235A] transition-all"
-                                >
-                                    <option value="">Select category</option>
-                                    <option value="offres">Offres</option>
-                                    <option value="offres_arabe">Offres en arabe</option>
-                                    <option value="guide_ngbss">Guide NGBSS</option>
-                                    <option value="depot_vente">Dépôt vente</option>
-                                    <option value="conventions">Conventions</option>
-                                </select>
-                            </div>
-                        </motion.div>
-
-                        {/* Type / Sector / Partner */}
-                        <motion.div 
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.5, delay: 0.2 }}
-                            className="grid md:grid-cols-3 gap-4"
-                        >
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-600 mb-1">
-                                    Type (optional)
-                                </label>
-                                <select
-                                    name="type"
-                                    value={form.type}
-                                    onChange={handleChange}
-                                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1F235A]/40 focus:border-[#1F235A] transition-all"
-                                >
-                                    <option value="">Select type</option>
-                                    <option value="offre">Offre</option>
-                                    <option value="convention">Convention</option>
-                                    <option value="guide">Guide</option>
-                                    <option value="depot_vente">Dépôt vente</option>
-                                    <option value="other">Autre</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-600 mb-1">
-                                    Sector (optional)
-                                </label>
-                                <input
-                                    type="text"
-                                    name="sector"
-                                    value={form.sector}
-                                    onChange={handleChange}
-                                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F235A]/40 focus:border-[#1F235A] transition-all"
-                                    placeholder="Santé, Éducation, Administration"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-600 mb-1">
-                                    Partner (optional)
-                                </label>
-                                <input
-                                    type="text"
-                                    name="partner"
-                                    value={form.partner}
-                                    onChange={handleChange}
-                                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F235A]/40 focus:border-[#1F235A] transition-all"
-                                    placeholder="Ministère de la Santé"
-                                />
-                            </div>
-                        </motion.div>
-
-                        {/* Language + validity */}
-                        <motion.div 
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.5, delay: 0.3 }}
-                            className="grid md:grid-cols-3 gap-4"
-                        >
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-600 mb-1">
-                                    Language (optional)
-                                </label>
-                                <select
-                                    name="language"
-                                    value={form.language}
-                                    onChange={handleChange}
-                                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1F235A]/40 focus:border-[#1F235A] transition-all"
-                                >
-                                    <option value="fr">Français</option>
-                                    <option value="ar">العربية</option>
-                                    <option value="other">Other / Mixed</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-600 mb-1">
-                                    Valid from (optional)
-                                </label>
-                                <input
-                                    type="date"
-                                    name="validFrom"
-                                    value={form.validFrom}
-                                    onChange={handleChange}
-                                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F235A]/40 focus:border-[#1F235A] transition-all"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-600 mb-1">
-                                    Valid to (optional)
-                                </label>
-                                <input
-                                    type="date"
-                                    name="validTo"
-                                    value={form.validTo}
-                                    onChange={handleChange}
-                                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F235A]/40 focus:border-[#1F235A] transition-all"
-                                />
-                            </div>
-                        </motion.div>
-
-                        {/* Description */}
-                        <motion.div
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.5, delay: 0.4 }}
-                        >
-                            <label className="block text-xs font-semibold text-slate-600 mb-1">
-                                Description / Key conditions (optional)
-                            </label>
-                            <textarea
-                                name="description"
-                                value={form.description}
-                                onChange={handleChange}
-                                className="w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F235A]/40 focus:border-[#1F235A] min-h-[96px] transition-all"
-                                placeholder="Short description, key conditions, eligibility, etc."
-                            />
-                        </motion.div>
-                    </div>
-
-                    {/* Right: PDF + actions / preview */}
-                    <div className="space-y-5">
-                        <motion.div 
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.5, delay: 0.2 }}
-                            whileHover={{ y: -5, boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}
-                            className="border border-slate-200 rounded-2xl p-4 bg-slate-50"
-                        >
-                            <h2 className="text-sm font-semibold text-[#1F235A] mb-3">
-                                Source document
-                            </h2>
-
-                            <div className="mb-3">
-                                <label className="block text-xs font-semibold text-slate-600 mb-1">
-                                    PDF URL *
-                                </label>
-                                <input
-                                    type="text"
-                                    name="pdfUrl"
-                                    value={form.pdfUrl}
-                                    onChange={handleChange}
-                                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F235A]/40 focus:border-[#1F235A] transition-all"
-                                    placeholder="/pdfs/offres/idoom_fibre_entreprise.pdf"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-600 mb-1">
-                                    Internal file name (optional)
-                                </label>
-                                <input
-                                    type="text"
-                                    name="sourceFile"
-                                    value={form.sourceFile}
-                                    onChange={handleChange}
-                                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F235A]/40 focus:border-[#1F235A] transition-all"
-                                    placeholder="offres_business_2025.pdf"
-                                />
-                            </div>
-                        </motion.div>
-
-                        <motion.div 
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.5, delay: 0.3 }}
-                            whileHover={{ y: -5, boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}
-                            className="border border-slate-200 rounded-2xl p-4 bg-white"
-                        >
-                            <h2 className="text-sm font-semibold text-[#1F235A] mb-2">
-                                Preview
-                            </h2>
-                            <p className="text-xs text-slate-500 mb-3">
-                                This is how this entry will appear to the search engine and
-                                chatbot.
-                            </p>
-
-                            <motion.div 
-                                key={form.name + form.category + form.type}
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                transition={{ duration: 0.3 }}
-                                className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 space-y-1"
-                            >
-                                <div className="text-sm font-semibold text-slate-800 truncate">
-                                    {form.name || "Offer name preview"}
-                                </div>
-                                <div className="flex flex-wrap gap-2 text-[11px]">
-                                    <AnimatePresence>
-                                        {form.category && (
-                                            <motion.span 
-                                                initial={{ opacity: 0, scale: 0.8 }}
-                                                animate={{ opacity: 1, scale: 1 }}
-                                                exit={{ opacity: 0, scale: 0.8 }}
-                                                transition={{ duration: 0.2 }}
-                                                className="inline-flex rounded-full bg-sky-50 text-sky-700 border border-sky-200 px-2 py-0.5"
-                                            >
-                                                {form.category}
-                                            </motion.span>
-                                        )}
-                                        {form.type && (
-                                            <motion.span 
-                                                initial={{ opacity: 0, scale: 0.8 }}
-                                                animate={{ opacity: 1, scale: 1 }}
-                                                exit={{ opacity: 0, scale: 0.8 }}
-                                                transition={{ duration: 0.2 }}
-                                                className="inline-flex rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5"
-                                            >
-                                                {form.type}
-                                            </motion.span>
-                                        )}
-                                        {form.sector && (
-                                            <motion.span 
-                                                initial={{ opacity: 0, scale: 0.8 }}
-                                                animate={{ opacity: 1, scale: 1 }}
-                                                exit={{ opacity: 0, scale: 0.8 }}
-                                                transition={{ duration: 0.2 }}
-                                                className="inline-flex rounded-full bg-slate-100 text-slate-700 border border-slate-200 px-2 py-0.5"
-                                            >
-                                                {form.sector}
-                                            </motion.span>
-                                        )}
-                                    </AnimatePresence>
-                                </div>
-                                <motion.div 
-                                    key={form.description}
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    transition={{ duration: 0.3 }}
-                                    className="text-xs text-slate-500 mt-1 line-clamp-2"
-                                >
-                                    {form.description ||
-                                        "Key conditions and short description will appear here."}
-                                </motion.div>
-                            </motion.div>
-                        </motion.div>
-
-                        <motion.div 
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5, delay: 0.4 }}
-                            className="flex justify-end"
-                        >
-                            <motion.button
-                                onClick={handleSubmit}
-                                disabled={loading}
-                                whileHover={{ scale: loading ? 1 : 1.05 }}
-                                whileTap={{ scale: loading ? 1 : 0.95 }}
-                                className="inline-flex items-center justify-center rounded-full bg-[#088141] px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
-                            >
-                                {loading ? (
-                                    <>
-                                        <motion.span
-                                            animate={{ rotate: 360 }}
-                                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                                            className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"
-                                        />
-                                        Saving...
-                                    </>
-                                ) : (
-                                    "Save entry"
-                                )}
-                            </motion.button>
-                        </motion.div>
-                    </div>
-                </div>
+              <span className="mt-[2px]">✅</span>
+              <p>{message}</p>
             </motion.div>
+          )}
+
+          {error && (
+            <motion.div
+              key="error"
+              initial={{ opacity: 0, y: -6, scale: 0.99 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -6, scale: 0.99 }}
+              transition={{ duration: 0.25, ease }}
+              className="rounded-2xl bg-red-50 text-red-800 border border-red-200 px-4 py-3 text-sm flex items-start gap-2"
+            >
+              <span className="mt-[2px]">⚠️</span>
+              <p>{error}</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Main grid */}
+        <div className="grid lg:grid-cols-[minmax(0,2fr)_minmax(260px,1fr)] gap-6 lg:gap-8">
+          {/* Upload form */}
+          <motion.form
+            id="data-upload-form"
+            onSubmit={handleSubmit}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.08, ease }}
+            className="space-y-6 rounded-3xl border border-slate-200/70 bg-[#F8FAFF] p-4 md:p-6"
+          >
+            <h2 className="text-sm font-semibold tracking-wide uppercase text-slate-500">
+              Upload des fichiers
+            </h2>
+
+            {/* File input */}
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-slate-700">
+                Choisissez un ou plusieurs fichiers
+              </label>
+              <input
+                type="file"
+                multiple
+                onChange={handleFileChange}
+                className="block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"
+              />
+            </div>
+
+            {/* Selected files with delete */}
+            {files.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-slate-600">Fichiers sélectionnés :</h3>
+                <ul className="space-y-2">
+                  {files.map((file, index) => (
+                    <li
+                      key={index}
+                      className="text-sm bg-white rounded-xl border border-slate-200 p-2 flex items-center justify-between"
+                    >
+                      <div className="flex-1 truncate">{file.name}</div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-400">{(file.size / 1024).toFixed(1)} KB</span>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteFile(index)}
+                          className="text-red-500 text-xs hover:text-red-700"
+                        >
+                          Supprimer
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Mobile submit */}
+            <div className="flex justify-end pt-2 md:hidden">
+              <motion.button
+                type="submit"
+                disabled={loading}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="inline-flex items-center justify-center rounded-full bg-[#088141] px-5 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 disabled:opacity-60"
+              >
+                {loading ? "Uploading..." : "Upload"}
+              </motion.button>
+            </div>
+          </motion.form>
+
+          {/* Preview column */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.12, ease }}
+            className="space-y-5"
+          >
+            <motion.div
+              whileHover={{ y: -2 }}
+              transition={{ duration: 0.25, ease }}
+              className="border border-slate-200 rounded-3xl bg-[#F8FAFF] p-4 md:p-5 shadow-sm"
+            >
+              <h2 className="text-sm font-semibold text-[#1F235A] mb-2">Preview</h2>
+
+              {files.length === 0 ? (
+                <p className="text-xs text-slate-500">
+                  Aucun fichier sélectionné. Choisissez un fichier pour voir l’aperçu.
+                </p>
+              ) : (
+                <ul className="space-y-3">
+                  {files.map((file, index) => (
+                    <li
+                      key={index}
+                      className="rounded-2xl bg-white border border-slate-200 px-3 py-3 flex flex-col"
+                    >
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold text-sm text-slate-800 truncate">{file.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteFile(index)}
+                          className="text-red-500 text-xs hover:text-red-700"
+                        >
+                          Supprimer
+                        </button>
+                      </div>
+                      <span className="text-xs text-slate-500">{file.type}</span>
+                      <span className="text-xs text-slate-400">{(file.size / 1024).toFixed(1)} KB</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </motion.div>
+
+            {/* Desktop submit */}
+            <div className="hidden md:flex justify-end">
+              <motion.button
+                type="submit"
+                form="data-upload-form"
+                disabled={loading}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="inline-flex items-center justify-center rounded-full bg-[#088141] px-5 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 disabled:opacity-60"
+              >
+                {loading ? "Uploading..." : "Upload"}
+              </motion.button>
+            </div>
+          </motion.div>
         </div>
-    );
+      </motion.div>
+    </motion.div>
+  );
 };
 
 export default DataIntegration;
