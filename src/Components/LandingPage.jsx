@@ -17,8 +17,22 @@ const LandingPage = () => {
               
             </div>
             <span className='text-7xl -mt-10 font-semibold text-[#1f235a] flex justify-center items-center'>D'<img src={Logo} alt="" className='size-[30vh]'/> </span>
-            <div className='h-[9vh] w-[50vw] flex justify-between items-center mt-[7vh] rounded-3xl border border-gray-300'>
-              <input type="text" placeholder='Posez votre question ici...' className='poppins text-gray-400/60 h-full w-full bg-transparent px-5 text-md outline-none rounded-3xl'/>
+            <div
+                className={`h-[9vh] w-[50vw] flex justify-between items-center mt-[7vh] rounded-3xl border transform transition-all duration-300 ${
+                    isActive
+                        ? 'border-[#1f235a] bg-gray-100 shadow-lg scale-[1.02]'
+                        : 'border-gray-300 bg-white'
+                }`}
+            >
+              <input
+                  type="text"
+                  placeholder="Posez votre question ici..."
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onFocus={() => setIsFocused(true)}
+                  onBlur={() => setIsFocused(false)}
+                  className="poppins text-gray-700 h-full w-full bg-transparent px-5 text-md outline-none rounded-3xl"
+              />
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="gray" className="size-[2.5vw] hover:stroke-[#1f235a] mr-4 cursor-pointer hover:-rotate-30 transition-all">
                 <path strokeLinecap="round" strokeLinejoin="round" d="m12.75 15 3-3m0 0-3-3m3 3h-7.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
               </svg>
