@@ -54,7 +54,7 @@ const Offers = () => {
 
   return (
     <div className="bg-white min-h-screen py-10">
-      <div className="w-[50vw] ml-[25vw] mx-auto px-6">
+      <div className="w-[50vw] ml-[20vw] mx-auto px-6">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}

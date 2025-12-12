@@ -9,12 +9,12 @@ const LandingPage = () => {
   return (
     <AnimatePresence>
       <div className='bg-white flex flex-col justify-center items-center'>
-          <div className='ml-[20vw] w-[60vw] flex flex-col justify-center items-center'>
+        <div className=" w-[60vw] flex flex-col justify-center items-center">
             <div className='flex'>
               <span className='text-7xl mt-[5vh] font-semibold text-[#1f235a] flex justify-center items-center'>
-                Assistant Intelligent   
+                Assistant Intelligent
               </span>
-              
+
             </div>
             <span className='text-7xl -mt-10 font-semibold text-[#1f235a] flex justify-center items-center'>D'<img src={Logo} alt="" className='size-[30vh]'/> </span>
             <div
@@ -45,7 +45,7 @@ const LandingPage = () => {
                 { question: "Comment puis-je activer un nouveau service ?"},
 
                ].map((item , index) => (
-                <motion.div 
+                <motion.div
                 initial={{opacity:0 , y:10}}
                 animate={{opacity:1 , y:0}}
                 transition={{delay: index * 0.2}}
@@ -66,7 +66,7 @@ const LandingPage = () => {
                   <p className='font-light '>On convension avec : DTP</p>
                   <p className='font-light '>On offre cet promotions pour les clients de traveaux public</p>
                 </div>
-                
+
               </motion.div>
                 <motion.div
               initial={{opacity:0 , x:-10}}
@@ -77,7 +77,7 @@ const LandingPage = () => {
                   <p className='font-light '>On convension avec : DTP</p>
                   <p className='font-light '>On offre cet promotions pour les clients de traveaux public</p>
                 </div>
-                
+
               </motion.div>
                             <motion.div
               initial={{opacity:0 , x:10}}
@@ -89,7 +89,7 @@ const LandingPage = () => {
                   <p className='font-light '>On convension avec : DTP</p>
                   <p className='font-light '>On offre cet promotions pour les clients de traveaux public</p>
                 </div>
-                
+
               </motion.div>
                             <motion.div
               initial={{opacity:0 , x:-10}}
@@ -101,7 +101,7 @@ const LandingPage = () => {
                   <p className='font-light '>On convension avec : DTP</p>
                   <p className='font-light '>On offre cet promotions pour les clients de traveaux public</p>
                 </div>
-                
+
               </motion.div>
 
 

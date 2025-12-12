@@ -85,7 +85,7 @@ const DataIntegration = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, ease }}
-            className="h-full min-h-screen bg-gradient-to-br from-[#F3F5FC] via-white to-[#E7F3F0] flex items-start justify-center px-4 py-8 md:py-10"
+            className="h-full min-h-screen bg-gradient-to-br from-[#F3F5FC] via-white to-[#E7F3F0] flex items-start justify-center px-4 py-3 "
         >
             <motion.div
                 initial={{ opacity: 0, scale: 0.985 }}
