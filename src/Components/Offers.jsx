@@ -4,12 +4,34 @@ import logo from "../Assets/Algerie_Telecom.svg";
 import { motion, AnimatePresence } from "framer-motion";
 import { fetchOffres } from "../api/offresApi";
 
+// 🔹 Helper: map raw backend offer → "Internet" | "Mobile" | "Fibre" | "Autre"
+function inferCategory(o) {
+  const text = (
+    (o.name || "") +
+    " " +
+    (o.summary || "") +
+    " " +
+    (o.customer_segment || "") +
+    " " +
+    (Array.isArray(o.keywords) ? o.keywords.join(" ") : "")
+  ).toLowerCase();
+
+  if (text.includes("fibre")) return "Fibre";
+  if (text.includes("mobile") || text.includes("gsm") || text.includes("4g"))
+    return "Mobile";
+  if (text.includes("internet") || text.includes("adsl") || text.includes("data"))
+    return "Internet";
+
+  return "Autre";
+}
+
 const Offers = () => {
   const [selectedCategory, setSelectedCategory] = useState("Tous");
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // you can keep or remove "Autre" depending on need
   const categories = ["Tous", "Internet", "Mobile", "Fibre"];
 
   useEffect(() => {
@@ -22,23 +44,29 @@ const Offers = () => {
         const data = await fetchOffres({});
         console.log("[Offers] Raw backend data:", data);
 
-        const normalized = (data || []).map((o, idx) => ({
-          id: o.id ?? idx,
-          title: o.name,
-          partner: o.customer_segment || "N/A",
-          description: o.summary || "",
-          category:
-            (o.keywords && o.keywords[0]) ||
-            o.customer_segment ||
-            "Internet",
-        }));
+        const normalized = (data || []).map((o, idx) => {
+          const cat = inferCategory(o);
+
+          return {
+            id: o.id ?? idx,
+            title: o.name || "Offre sans titre",
+            partner: o.customer_segment || "N/A",
+            description: o.summary || "",
+            category: cat,
+          };
+        });
 
         console.log("[Offers] Normalized offers:", normalized);
+        console.log(
+          "[Offers] Distinct categories:",
+          [...new Set(normalized.map((o) => o.category))]
+        );
+
         setOffers(normalized);
       } catch (err) {
         console.error("[Offers] Failed to load offers:", err);
         setError("Impossible de récupérer les offres depuis l'API.");
-        setOffers([]); // 🚫 no local sample
+        setOffers([]); // no local fallback
       } finally {
         setLoading(false);
       }
