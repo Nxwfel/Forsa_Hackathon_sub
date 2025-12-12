@@ -5,9 +5,10 @@ import { RouterProvider } from "react-router/dom";
 import App from "./App.jsx";
 import Preloader from "./Components/Preloader.jsx";
 import HomePage from "./Pages/HomePage.jsx";
+import LandingPage from "./Pages/LandingPage.jsx";
 
 const router = createBrowserRouter([
-  { path: "/",element: <HomePage />, },
+  { path: "/",element: <LandingPage />, },
 ]);
 
 const root = document.getElementById("root");

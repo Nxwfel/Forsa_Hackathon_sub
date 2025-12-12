@@ -1,44 +1,111 @@
-import React , {useState} from 'react'
-import {motion} from 'framer-motion'
+import React, { useState, useEffect, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { gsap } from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Logo from '../Assets/Algerie_Telecom.svg'
 import Robot from '../Assets/robot.svg'
+import LogoLoop from '../Animations/LogoLoop.jsx';
+import Ensia from '../Assets/ensia.png'
+import Huawei from '../Assets/huawei.svg'
+import AlgerieTelecom from '../Assets/Algerie_Telecom.svg'
+import Particles from '../Components/Particles.jsx';
 const HomePage = () => {
     const [showchatbot, setShowchatbot] = useState(false);
+
+
+// Alternative with image sources
+const imageLogos = [
+  { src: Huawei , alt: "Company 1"},
+  { src: AlgerieTelecom, alt: "Company 2"},
+  { src: Ensia, alt: "Company 3"},
+];
+    const heroRef = useRef(null)
+    const navRef = useRef(null)
+    const titleRef = useRef(null)
+useEffect(() => {
+        // Floating animation for hero elements
+        gsap.to(heroRef.current, {
+            y: -20,
+            duration: 2,
+            ease: 'power1.inOut',
+            repeat: -1,
+            yoyo: true
+        })
+
+        // Blur effect on scroll
+        ScrollTrigger.create({
+            trigger: heroRef.current,
+            start: 'top top',
+            end: 'bottom top',
+            onUpdate: (self) => {
+                const progress = self.progress
+                gsap.to(heroRef.current, {
+                    filter: `blur(${progress * 10}px)`,
+                    opacity: 1 - progress * 0.5
+                })
+            }
+        })
+
+        // Parallax effect for title
+        gsap.to(titleRef.current, {
+            scrollTrigger: {
+                trigger: titleRef.current,
+                start: 'top center',
+                end: 'bottom top',
+                scrub: 1
+            },
+            y: 100,
+            opacity: 0.3
+        })
+    }, [])
+
   return (
     <div className='h-screen w-screen flex flex-col justify-start items-center overflow-x-hidden'>
-      <div className='w-[40vw] h-[10vh] rounded-full justify-center items-center gap-[2vw] flex'>
+        <div style={{ width: '100%', height: '100%', position: 'absolute' }}>
+  <Particles
+    particleColors={['#ffffff', '#ffffff']}
+    particleCount={200}
+    particleSpread={10}
+    speed={0.1}
+    particleBaseSize={100}
+    moveParticlesOnHover={true}
+    alphaParticles={false}
+    disableRotation={false}
+  />
+</div>
+      <div className='w-[40vw] h-[10vh] z-10 rounded-full justify-center items-center gap-[2vw] flex'>
           <motion.h1 
           initial={{scale:1,y:-10, opacity:0}}
           animate={{y:0, opacity:1}}
-          whileHover={{scale:1.06}}
-          className='font-bold text-sm text-[#1F235A] -mt-[1vh] cursor-pointer'>Acceuil</motion.h1>
+          whileHover={{scale:1.1}}
+          className='font-semibold text-sm text-[#088141] hover:white -mt-[1vh] cursor-pointer'>Acceuil</motion.h1>
             <motion.h1
             initial={{scale:1,y:-10, opacity:0}}
           animate={{y:0, opacity:1}}
-          whileHover={{scale:1.06}}
-            className='font-bold text-sm text-[#1F235A] cursor-pointer'>A propos</motion.h1>
+          whileHover={{scale:1.1}}
+            className='font-semibold text-sm text-[#088141] cursor-pointer'>A propos</motion.h1>
             <motion.img
             initial={{scale:1,y:-10, opacity:0}}
           animate={{y:0, opacity:1}}
-          whileHover={{scale:1.06}}
-            src={Logo} alt=""  className='size-[5vw] cursor-pointer'/>
+          whileHover={{scale:1.1}}
+            src={Logo} alt=""  className='size-[5vw] mt-[2vh] cursor-pointer'/>
             <motion.h1
             initial={{scale:1,y:-10, opacity:0}}
           animate={{y:0, opacity:1}}
-          whileHover={{scale:1.06}}
-            className='font-bold text-sm  text-[#1F235A] cursor-pointer'>Contact</motion.h1>
+          whileHover={{scale:1.1}}
+            className='font-semibold text-sm  text-[#088141] cursor-pointer'>Contact</motion.h1>
           <motion.h1
           initial={{scale:1,y:-10, opacity:0}}
           animate={{y:0, opacity:1}}
-          whileHover={{scale:1.06}}
-          className='font-bold text-sm text-[#1F235A] -mt-[1vh] cursor-pointer'>Services</motion.h1>
+          whileHover={{scale:1.1}}
+          className='font-semibold text-sm text-[#088141] -mt-[1vh] cursor-pointer'>Services</motion.h1>
       </div>
-        <div className='w-[80vw] h-[70vh] rounded-3xl mt-[5vh] flex flex-col justify-center items-center'>
+        <div ref={heroRef} className='w-[80vw] h-[70vh] rounded-3xl mt-[20vh] flex flex-col justify-center items-center'>
             <motion.h1
             initial={{scale:1.2, opacity:0}}
             animate={{scale:1, opacity:1}}
             transition={{delay:0.4}}
-            className='text-[#1F235A]  tommorow font-bold text-7xl text-center' >Decouvré Nos Offres Vous mème</motion.h1>
+            className='text-[#1F235A] poppins font-bold text-7xl text-center' >Decouvré Nos Offres Vous mème</motion.h1>
             <div className='flex justify-center items-center gap-[1vw] mt-[2vh]'>
                 <motion.h1
                 initial={{scale:1.2, opacity:0}}
@@ -124,8 +191,22 @@ const HomePage = () => {
               
             </div>
             )}
-            
 
+            <div style={{ height: '200px', position: 'relative', overflow: 'hidden'}} className='w-[80vw] mt-[15vh]'>
+      {/* Basic horizontal loop */}
+      <LogoLoop
+        logos={imageLogos}
+        speed={120}
+        direction="left"
+        logoHeight={48}
+        gap={40}
+        hoverSpeed={0}
+        scaleOnHover
+        fadeOut
+        fadeOutColor="#ffffff"
+        ariaLabel="Technology partners"
+      />
+    </div>
         </div>
 
     </div>
