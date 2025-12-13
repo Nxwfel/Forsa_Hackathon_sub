@@ -2,46 +2,16 @@ import React, { useState, useRef, useEffect } from 'react';
 import Logo from '../Assets/Algerie_Telecom.svg';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import {useChat} from '../Contexts/ChatContext';
 
 const Chatbot = () => {
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      text: "Bonjour! Je suis votre assistant intelligent. Comment puis-je vous aider aujourd'hui?",
-      sender: 'bot',
-      timestamp: new Date()
-    }
-  ]);
   const [inputValue, setInputValue] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
-
-  // Mock responses with more variety
-  const mockResponses = [
-    {
-      category: "Consommation",
-      response: "Pour vérifier votre consommation de données, envoyez 'CONSOMMATION' au 1234 ou connectez-vous à votre espace client."
-    },
-    {
-      category: "Forfaits",
-      response: "Nous proposons plusieurs forfaits Internet : Forfait 10GB à 199DA/mois, Forfait 30GB à 499DA/mois et Forfait 100GB à 999DA/mois."
-    },
-    {
-      category: "Services",
-      response: "Pour activer un nouveau service, rendez-vous dans la section 'Services' de votre espace client ou contactez notre service client au 3131."
-    },
-    {
-      category: "Paiement",
-      response: "Vous pouvez effectuer vos paiements en ligne via l'espace client, par téléphone ou dans nos agences."
-    },
-    {
-      category: "Dépannage",
-      response: "Pour un problème technique, appelez le 3131 ou utilisez l'option 'Assistance Technique' dans votre espace client."
-    }
-  ];
+  
+  // Get chat context
+  const { isConnected, sendMessage, messages, isLoading, error, reconnect, clearMessages } = useChat();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -51,40 +21,13 @@ const Chatbot = () => {
     scrollToBottom();
   }, [messages]);
 
-  const handleSend = async () => {
-    if (!inputValue.trim()) return;
+  const handleSend = () => {
+    if (!inputValue.trim() || !isConnected || isLoading) return;
 
-    const userMessage = {
-      id: Date.now(),
-      text: inputValue,
-      sender: 'user',
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, userMessage]);
+    // Send message through WebSocket
+    sendMessage(inputValue);
     setInputValue('');
     setShowSuggestions(false);
-    setIsLoading(true);
-    
-    // Simulate typing indicator
-    setIsTyping(true);
-
-    // Simulate API call delay
-    setTimeout(() => {
-      setIsTyping(false);
-      const randomResponse = mockResponses[Math.floor(Math.random() * mockResponses.length)];
-      
-      const botMessage = {
-        id: Date.now() + 1,
-        text: randomResponse.response,
-        sender: 'bot',
-        category: randomResponse.category,
-        timestamp: new Date()
-      };
-      
-      setMessages(prev => [...prev, botMessage]);
-      setIsLoading(false);
-    }, 1500);
   };
 
   const handleKeyPress = (e) => {
@@ -95,7 +38,7 @@ const Chatbot = () => {
   };
 
   const formatTime = (date) => {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return date?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || '';
   };
 
   const copyToClipboard = (text) => {
@@ -111,15 +54,18 @@ const Chatbot = () => {
     }
   };
 
-  const clearChat = () => {
-    setMessages([
-      {
-        id: 1,
-        text: "Bonjour! Je suis votre assistant intelligent. Comment puis-je vous aider aujourd'hui?",
-        sender: 'bot',
-        timestamp: new Date()
-      }
-    ]);
+  const handleClearChat = () => {
+    if (clearMessages) {
+      clearMessages();
+    }
+    setInputValue('');
+    setShowSuggestions(true);
+  };
+
+  const handleSuggestionClick = (question) => {
+    if (!isConnected || isLoading) return;
+    sendMessage(question);
+    setShowSuggestions(false);
   };
 
   const adjustTextareaHeight = () => {
@@ -149,7 +95,24 @@ const Chatbot = () => {
           </Link>
           <div>
             <h1 className="text-xl font-bold text-[#1f235a]">Assistant Intelligent</h1>
-            <p className="text-xs text-gray-500">Toujours disponible pour vous aider</p>
+            <div className="flex items-center">
+              <motion.span 
+                className={`w-2 h-2 rounded-full mr-2 ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}
+                animate={isConnected ? { scale: [1, 1.2, 1] } : {}}
+                transition={{ repeat: Infinity, duration: 2 }}
+              />
+              <p className="text-xs text-gray-500">
+                {isConnected ? 'Connecté' : 'Déconnecté'}
+              </p>
+              {!isConnected && (
+                <button 
+                  onClick={reconnect}
+                  className="ml-2 text-xs text-blue-600 hover:text-blue-800 underline"
+                >
+                  Reconnecter
+                </button>
+              )}
+            </div>
           </div>
         </div>
         
@@ -157,7 +120,7 @@ const Chatbot = () => {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={clearChat}
+            onClick={handleClearChat}
             className="text-sm text-gray-600 hover:text-[#1f235a] flex items-center"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -168,9 +131,49 @@ const Chatbot = () => {
         </div>
       </header>
 
+      {/* Error Banner */}
+      {error && !isConnected && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-red-500 text-white px-6 py-3 flex items-center justify-between"
+        >
+          <div className="flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            <span className="text-sm">{error}</span>
+          </div>
+          <button 
+            onClick={reconnect}
+            className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded text-sm"
+          >
+            Réessayer
+          </button>
+        </motion.div>
+      )}
+
       {/* Messages Container */}
       <div className="flex-1 overflow-y-auto p-4 md:p-6">
         <div className="max-w-4xl mx-auto space-y-4">
+          {/* Welcome message if no messages */}
+          {messages.length === 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex justify-start"
+            >
+              <div className="bg-white text-gray-800 shadow-md rounded-2xl rounded-bl-none p-4 max-w-[75%] border border-gray-200">
+                <div className="whitespace-pre-wrap break-words">
+                  Bonjour! Je suis votre assistant intelligent Algérie Télécom. Comment puis-je vous aider aujourd'hui?
+                </div>
+                <div className="text-xs mt-1 text-gray-500">
+                  {formatTime(new Date())}
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           <AnimatePresence>
             {messages.map((message) => (
               <motion.div
@@ -178,37 +181,58 @@ const Chatbot = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
                   className={`max-w-[85%] md:max-w-[75%] rounded-2xl p-4 relative group ${
-                    message.sender === 'user'
+                    message.type === 'user'
                       ? 'bg-[#272fa3] text-white rounded-br-none'
+                      : message.isError
+                      ? 'bg-red-100 text-red-800 rounded-bl-none border border-red-200'
                       : 'bg-white text-gray-800 shadow-md rounded-bl-none border border-gray-200'
                   }`}
                 >
-                  {message.category && (
-                    <span className={`inline-block px-2 py-1 rounded-full text-xs mb-2 ${
-                      message.sender === 'bot' 
-                        ? 'bg-[#eef2ff] text-[#2f3691]' 
-                        : 'bg-blue-100 text-blue-800'
-                    }`}>
-                      {message.category}
-                    </span>
-                  )}
-                  
                   <div className="whitespace-pre-wrap break-words">
-                    {message.text}
+                    {message.message}
                   </div>
                   
-                  <div className={`text-xs mt-1 ${message.sender === 'user' ? 'text-blue-200' : 'text-gray-500'} flex justify-between items-center`}>
+                  {message.sources && message.sources.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-gray-300">
+                      <p className="text-xs font-semibold text-gray-600 mb-2">📚 Sources:</p>
+                      <div className="space-y-2">
+                        {message.sources.slice(0, 3).map((source, index) => (
+                          <div key={index} className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                            <span className="font-medium">• </span>
+                            {typeof source === 'string' 
+                              ? source 
+                              : source.page_content 
+                                ? source.page_content.substring(0, 150) + '...'
+                                : JSON.stringify(source).substring(0, 150) + '...'}
+                          </div>
+                        ))}
+                        {message.sources.length > 3 && (
+                          <p className="text-xs text-gray-500 italic">
+                            +{message.sources.length - 3} autres sources...
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className={`text-xs mt-2 ${
+                    message.type === 'user' 
+                      ? 'text-blue-200' 
+                      : message.isError 
+                      ? 'text-red-600' 
+                      : 'text-gray-500'
+                  } flex justify-between items-center`}>
                     <span>{formatTime(message.timestamp)}</span>
                     
-                    {message.sender === 'bot' && (
+                    {message.type === 'bot' && !message.isError && (
                       <button
-                        data-text={message.text}
-                        onClick={() => copyToClipboard(message.text)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity ml-2"
+                        data-text={message.message}
+                        onClick={() => copyToClipboard(message.message)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity ml-2 hover:text-gray-700"
                         title="Copier le texte"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -221,17 +245,20 @@ const Chatbot = () => {
               </motion.div>
             ))}
             
-            {isTyping && (
+            {isLoading && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 className="flex justify-start"
               >
-                <div className="bg-white text-gray-800 shadow-md rounded-2xl rounded-bl-none p-4 max-w-[75%]">
-                  <div className="flex space-x-2">
-                    <div className="w-2 h-2 bg-[#1f235a] rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-[#1f235a] rounded-full animate-bounce delay-100"></div>
-                    <div className="w-2 h-2 bg-[#1f235a] rounded-full animate-bounce delay-200"></div>
+                <div className="bg-white text-gray-800 shadow-md rounded-2xl rounded-bl-none p-4 max-w-[75%] border border-gray-200">
+                  <div className="flex items-center space-x-2">
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-[#1f235a] rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-[#1f235a] rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-2 h-2 bg-[#1f235a] rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    </div>
+                    <span className="text-sm">L'assistant réfléchit...</span>
                   </div>
                 </div>
               </motion.div>
@@ -244,7 +271,7 @@ const Chatbot = () => {
 
       {/* Suggestions */}
       <AnimatePresence>
-        {showSuggestions && (
+        {showSuggestions && messages.length === 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -255,7 +282,7 @@ const Chatbot = () => {
               <p className="text-sm text-gray-600 mb-2">Questions fréquentes:</p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 {[
-                  "Comment puis-je vérifier ma consommation de données ?",
+                  "Quelles sont les offres fibre disponibles ?",
                   "Quels sont les forfaits Internet disponibles ?",
                   "Comment puis-je activer un nouveau service ?"
                 ].map((question, index) => (
@@ -263,8 +290,13 @@ const Chatbot = () => {
                     key={index}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => setInputValue(question)}
-                    className="text-left p-3 text-sm bg-white hover:bg-gray-50 rounded-xl border border-gray-200 text-gray-700 transition-colors truncate shadow-sm"
+                    onClick={() => handleSuggestionClick(question)}
+                    disabled={!isConnected || isLoading}
+                    className={`text-left p-3 text-sm bg-white rounded-xl border border-gray-200 text-gray-700 transition-colors shadow-sm ${
+                      isConnected && !isLoading
+                        ? 'hover:bg-gray-50 hover:border-[#1f235a] cursor-pointer'
+                        : 'opacity-50 cursor-not-allowed'
+                    }`}
                   >
                     {question}
                   </motion.button>
@@ -278,30 +310,58 @@ const Chatbot = () => {
       {/* Input Area */}
       <div className="bg-white border-t border-gray-200 p-4">
         <div className="max-w-4xl mx-auto">
-          <div className="flex items-end border border-gray-300 rounded-2xl bg-white focus-within:ring-2 focus-within:ring-[#1f235a] focus-within:border-[#1f235a] transition-all">
+          <div className={`flex items-end border rounded-2xl bg-white transition-all ${
+            isConnected 
+              ? 'focus-within:ring-2 focus-within:ring-[#1f235a] focus-within:border-[#1f235a] border-gray-300' 
+              : 'border-red-300 bg-red-50'
+          }`}>
             <textarea
               ref={textareaRef}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Posez votre question ici..."
-              className="flex-1 resize-none border-0 focus:ring-0 focus:outline-none p-4 text-gray-700 max-h-32 min-h-[44px]"
+              placeholder={isConnected 
+                ? "Posez votre question ici..." 
+                : "Impossible d'envoyer des messages: déconnecté"}
+              className={`flex-1 resize-none border-0 focus:ring-0 focus:outline-none p-4 text-gray-700 max-h-32 min-h-[44px] rounded-2xl ${
+                !isConnected ? 'bg-red-50' : 'bg-white'
+              }`}
               rows="1"
+              disabled={!isConnected || isLoading}
             />
-            <button
+            <motion.button
               onClick={handleSend}
-              disabled={isLoading || !inputValue.trim()}
-              className={`m-2 p-2 rounded-full ${
-                inputValue.trim()
+              disabled={!isConnected || isLoading || !inputValue.trim()}
+              whileHover={isConnected && inputValue.trim() ? { scale: 1.05 } : {}}
+              whileTap={isConnected && inputValue.trim() ? { scale: 0.95 } : {}}
+              className={`m-2 p-2 rounded-full transition-colors ${
+                isConnected && inputValue.trim() && !isLoading
                   ? 'bg-[#2b3180] hover:bg-[#292f81] text-white'
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              } transition-colors`}
+              }`}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-              </svg>
-            </button>
+              {isLoading ? (
+                <svg className="animate-spin h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                </svg>
+              )}
+            </motion.button>
           </div>
+          
+          {!isConnected && (
+            <p className="text-red-500 text-sm mt-2 text-center">
+              ⚠️ Impossible d'envoyer des messages: déconnecté du serveur
+            </p>
+          )}
+          
+          <p className="text-xs text-gray-400 text-center mt-2">
+            Appuyez sur Entrée pour envoyer • Shift + Entrée pour nouvelle ligne
+          </p>
         </div>
       </div>
     </div>

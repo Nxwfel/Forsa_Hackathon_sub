@@ -1,3 +1,4 @@
+// App.jsx
 import { useState } from "react";
 import LandingPage from "./Components/LandingPage.jsx";
 import Offers from "./Components/Offers.jsx";
@@ -6,6 +7,7 @@ import Historique from "./Components/Historique.jsx";
 import DataIntegration from "./Components/DataIntegration.jsx";
 import SearchEngine from "./Components/SearchEngine.jsx";
 import { AnimatePresence, motion } from "framer-motion";
+import { ChatProvider } from "./Contexts/ChatContext.jsx";
 
 const NAV = [
     {
@@ -43,8 +45,6 @@ const NAV = [
             </svg>
         ),
     },
-
-
     {
         key: "Historique",
         label: "Historique",
@@ -74,64 +74,66 @@ function App() {
     const [isExpanded, setIsExpanded] = useState(false);
 
     return (
-        <div className="h-screen w-screen flex bg-white p-3 px-4 gap-4 overflow-hidden">
-            {/* SIDEBAR */}
-            <motion.aside
-                onHoverStart={() => setIsExpanded(true)}
-                onHoverEnd={() => setIsExpanded(false)}
-                animate={{ width: isExpanded ? 220 : 76 }}
-                transition={{ type: "spring", stiffness: 260, damping: 22 }}
-                className="h-full rounded-2xl border border-gray-300/60 bg-white shadow-sm overflow-hidden flex flex-col"
-            >
-                <div className="flex items-center justify-center pt-5 pb-4">
-                    <img src={logo} alt="logo" className="w-12 h-12 object-contain" />
-                </div>
+        <ChatProvider>
+            <div className="h-screen w-screen flex bg-white p-3 px-4 gap-4 overflow-hidden">
+                {/* SIDEBAR */}
+                <motion.aside
+                    onHoverStart={() => setIsExpanded(true)}
+                    onHoverEnd={() => setIsExpanded(false)}
+                    animate={{ width: isExpanded ? 220 : 76 }}
+                    transition={{ type: "spring", stiffness: 260, damping: 22 }}
+                    className="h-full rounded-2xl border border-gray-300/60 bg-white shadow-sm overflow-hidden flex flex-col"
+                >
+                    <div className="flex items-center justify-center pt-5 pb-4">
+                        <img src={logo} alt="logo" className="w-12 h-12 object-contain" />
+                    </div>
 
-                <nav className="flex-1 mt-[13vh] px-2">
-                    <ul className="flex flex-col gap-3 mt-4">
-                        {NAV.map((item) => {
-                            const active = tab === item.key;
+                    <nav className="flex-1 mt-[13vh] px-2">
+                        <ul className="flex flex-col gap-3 mt-4">
+                            {NAV.map((item) => {
+                                const active = tab === item.key;
 
-                            return (
-                                <li key={item.key}>
-                                    <button
-                                        type="button"
-                                        onClick={() => setTab(item.key)}
-                                        className={`w-full rounded-xl py-3 pl-4 transition-all flex items-center justify-start gap-1
-                                        ${active ? "bg-[#1f235a] text-white pl-4" : "bg-white text-[#1f235a] hover:bg-[#1f235a] hover:text-white"}
-                                      `}
+                                return (
+                                    <li key={item.key}>
+                                        <button
+                                            type="button"
+                                            onClick={() => setTab(item.key)}
+                                            className={`w-full rounded-xl py-3 pl-4 transition-all flex items-center justify-start gap-1
+                                            ${active ? "bg-[#1f235a] text-white pl-4" : "bg-white text-[#1f235a] hover:bg-[#1f235a] hover:text-white"}
+                                          `}
                                         >
-                                        <span className="text-current [&>svg]:stroke-current">{item.icon}</span>
+                                            <span className="text-current [&>svg]:stroke-current">{item.icon}</span>
 
-                                        <AnimatePresence>
-                                            {isExpanded && (
-                                                <motion.span
-                                                    initial={{ opacity: 0, y: -4 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    exit={{ opacity: 0, y: -4 }}
-                                                    className="text-[12px] font-medium leading-none"
-                                                >
-                                                    {item.label}
-                                                </motion.span>
-                                            )}
-                                        </AnimatePresence>
-                                    </button>
-                                </li>
-                            );
-                        })}
-                    </ul>
-                </nav>
-            </motion.aside>
+                                            <AnimatePresence>
+                                                {isExpanded && (
+                                                    <motion.span
+                                                        initial={{ opacity: 0, y: -4 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        exit={{ opacity: 0, y: -4 }}
+                                                        className="text-[12px] font-medium leading-none"
+                                                    >
+                                                        {item.label}
+                                                    </motion.span>
+                                                )}
+                                            </AnimatePresence>
+                                        </button>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    </nav>
+                </motion.aside>
 
-            {/* CONTENT */}
-            <main className="flex-1 h-full w-full overflow-y-auto rounded-2xl">
-                {tab === "Chatbot" && <LandingPage />}
-                {tab === "Offres" && <Offers />}
-                {tab === "Historique" && <Historique />}
-                {tab === "DataIntegration" && <DataIntegration />}
-                {tab === "Search" && <SearchEngine />}
-            </main>
-        </div>
+                {/* CONTENT */}
+                <main className="flex-1 h-full w-full overflow-y-auto rounded-2xl">
+                    {tab === "Chatbot" && <LandingPage />}
+                    {tab === "Offres" && <Offers />}
+                    {tab === "Historique" && <Historique />}
+                    {tab === "DataIntegration" && <DataIntegration />}
+                    {tab === "Search" && <SearchEngine />}
+                </main>
+            </div>
+        </ChatProvider>
     );
 }
 

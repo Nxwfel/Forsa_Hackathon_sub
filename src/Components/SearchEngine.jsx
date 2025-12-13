@@ -301,8 +301,7 @@ const Search = () => {
     setTimeout(() => setToast((p) => ({ ...p, visible: false })), 3000);
   };
 
-  // --------- search + filters ---------
-  const [activeType, setActiveType] = useState("all"); // all | offre | convention | guide | equipment
+  const [activeType, setActiveType] = useState("all"); 
   const [query, setQuery] = useState("");
 
   const [offerFilters, setOfferFilters] = useState({
@@ -333,7 +332,6 @@ const Search = () => {
     compatible_offers: "",
   });
 
-  // --------- data state ---------
   const [raw, setRaw] = useState({ offre: [], convention: [], guide: [], equipment: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -494,7 +492,6 @@ const Search = () => {
     error: "bg-red-600 text-white",
   };
 
-  // ----- Dynamic filter UI (same card styles as Search99) -----
   const FilterCard2 = () => {
     if (activeType === "offre") {
       return (

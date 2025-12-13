@@ -1,81 +1,154 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useChat } from '../Contexts/ChatContext';
 
 const Historique = () => {
   const [selectedChat, setSelectedChat] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [history, setHistory] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-  // Sample chat history data
-  const chatHistory = [
-    {
-      id: 1,
-      question: "Comment puis-je vérifier ma consommation de données ?",
-      response: "Pour vérifier votre consommation de données, vous pouvez utiliser l'application mobile Algérie Télécom ou composer le *600# depuis votre téléphone.",
-      timestamp: "2024-12-11 14:30",
-      category: "Consommation",
-      offers: [
-        {
-          title: "Offre De 100GB",
-          partner: "DTP",
-          description: "Promotion pour les clients de travaux public"
-        }
-      ]
-    },
-    {
-      id: 2,
-      question: "Quels sont les forfaits Internet disponibles ?",
-      response: "Nous proposons plusieurs forfaits Internet : Fibre Optique de 10Mbps à 100Mbps, ADSL de 4Mbps à 20Mbps, et 4G LTE avec différentes options de données.",
-      timestamp: "2024-12-11 13:15",
-      category: "Forfaits",
-      offers: [
-        {
-          title: "Fibre Optique Premium",
-          partner: "Résidentiel",
-          description: "Installation gratuite et 6 mois à prix réduit"
-        },
-        {
-          title: "Pack Famille 200GB",
-          partner: "Familles",
-          description: "Internet illimité pour toute la famille"
-        }
-      ]
-    },
-    {
-      id: 3,
-      question: "Comment puis-je activer un nouveau service ?",
-      response: "Pour activer un nouveau service, vous pouvez visiter l'une de nos agences, appeler notre service client au 12, ou utiliser votre espace client en ligne.",
-      timestamp: "2024-12-11 10:45",
-      category: "Services",
-      offers: []
-    },
-    {
-      id: 4,
-      question: "Quel est le prix de la fibre optique ?",
-      response: "Les prix de la fibre optique varient selon le débit : 10Mbps à partir de 1990 DA/mois, 20Mbps à 2990 DA/mois, et 100Mbps à 5990 DA/mois.",
-      timestamp: "2024-12-10 16:20",
-      category: "Tarifs",
-      offers: [
-        {
-          title: "Fibre 1Gbps",
-          partner: "Gaming",
-          description: "La vitesse ultime pour les gamers"
-        }
-      ]
-    },
-    {
-      id: 5,
-      question: "Comment résilier mon abonnement ?",
-      response: "Pour résilier votre abonnement, vous devez vous rendre dans une agence Algérie Télécom avec votre pièce d'identité et votre dernière facture.",
-      timestamp: "2024-12-10 11:30",
-      category: "Services",
-      offers: []
+  const { messages } = useChat();
+
+  // Backend URL from environment or default
+  const BACKEND_URL = process.env.REACT_APP_API_URL || 'http://192.168.85.94:8000';
+
+ // Update your useEffect hook to handle CORS issues:
+useEffect(() => {
+  const fetchHistory = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${BACKEND_URL}/rest_chat/history`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('History fetched:', data);
+      
+      // Handle the new backend format where history is in data.history
+      const historyArray = Array.isArray(data) ? data : 
+                          Array.isArray(data.history) ? data.history : 
+                          [];
+      
+      // Sort by newest first
+      const sortedHistory = historyArray.sort((a, b) => 
+        new Date(b.timestamp) - new Date(a.timestamp)
+      );
+      
+      setHistory(sortedHistory);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching history:', err);
+      // Check if it's a CORS issue
+      if (err.message.includes('Failed to fetch') || err.message.includes('CORS')) {
+        setError('Erreur CORS: Le backend doit autoriser les requêtes depuis le frontend. Veuillez vérifier la configuration du serveur.');
+      } else if (err.message.includes('NetworkError')) {
+        setError('Impossible de se connecter au serveur. Vérifiez que le backend est démarré.');
+      } else {
+        setError(err.message);
+      }
+    } finally {
+      setLoading(false);
     }
-  ]
+  };
 
-  const filteredHistory = chatHistory.filter(chat =>
-    chat.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    chat.response.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  fetchHistory();
+}, [BACKEND_URL]);
+  // Update history when new messages arrive
+  useEffect(() => {
+    if (messages.length > 0) {
+      // Group messages into conversations
+      const conversations = [];
+      let currentConversation = null;
+
+      messages.forEach((msg, index) => {
+        if (msg.type === 'user') {
+          // Start a new conversation
+          currentConversation = {
+            id: `temp-${Date.now()}-${index}`,
+            question: msg.message,
+            response: '',
+            timestamp: msg.timestamp?.toISOString() || new Date().toISOString(),
+            category: 'Recent',
+            sources: []
+          };
+        } else if (msg.type === 'bot' && currentConversation) {
+          // Add bot response to current conversation
+          currentConversation.response = msg.message;
+          currentConversation.sources = msg.sources || [];
+          conversations.push({ ...currentConversation });
+          currentConversation = null;
+        }
+      });
+
+      // Add temporary conversations to history (at the beginning)
+      if (conversations.length > 0) {
+        setHistory(prev => {
+          const existingIds = new Set(prev.map(item => item.id));
+          const newConversations = conversations.filter(conv => !existingIds.has(conv.id));
+          return [...newConversations, ...prev];
+        });
+      }
+    }
+  }, [messages]);
+
+  const filteredHistory = history.filter(chat =>
+    (chat.question?.toLowerCase().includes(searchTerm.toLowerCase()) || '') ||
+    (chat.response?.toLowerCase().includes(searchTerm.toLowerCase()) || '')
+  );
+
+  const retryFetch = () => {
+    setError(null);
+    setLoading(true);
+    window.location.reload();
+  };
+
+  if (loading) {
+    return (
+      <div className='flex justify-center items-center min-h-screen bg-gray-50'>
+        <div className='text-center'>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#1f235a] mx-auto"></div>
+          <p className='mt-4 text-lg text-gray-600'>Chargement de l'historique...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className='flex justify-center items-center min-h-screen bg-gray-50 p-4'>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className='max-w-md w-full text-center p-8 bg-white rounded-2xl shadow-lg border-2 border-red-200'
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-red-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <h3 className='text-xl font-bold text-gray-800 mb-2'>Erreur de connexion</h3>
+          <p className='text-red-600 mb-6'>{error}</p>
+          
+          <div className='flex gap-3 justify-center'>
+            <button 
+              onClick={retryFetch}
+              className='px-6 py-3 bg-[#1f235a] text-white rounded-lg hover:bg-[#292f81] transition-colors font-medium'
+            >
+              Réessayer
+            </button>
+            <button 
+              onClick={() => setError(null)}
+              className='px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium'
+            >
+              Continuer sans historique
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className='bg-gray-50 min-h-screen py-10'>
@@ -121,47 +194,62 @@ const Historique = () => {
               transition={{ delay: 0.2 }}
               className='bg-white rounded-2xl shadow-lg p-4 max-h-[75vh] overflow-y-auto'
             >
-              <h2 className='text-2xl font-semibold text-[#1f235a] mb-4 sticky top-0 bg-white pb-2'>
+              <h2 className='text-2xl font-semibold text-[#1f235a] mb-4 sticky top-0 bg-white pb-2 z-10'>
                 Conversations ({filteredHistory.length})
               </h2>
               <div className='space-y-3'>
-                {filteredHistory.map((chat, index) => (
-                  <motion.div
-                    key={chat.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    onClick={() => setSelectedChat(chat)}
-                    className={`p-4 rounded-xl cursor-pointer transition-all duration-300 ${
-                      selectedChat?.id === chat.id
-                        ? 'bg-gradient-to-r from-[#1f235a] to-[#292f81] text-white shadow-lg'
-                        : 'bg-gray-50 hover:bg-gray-100 text-gray-800'
-                    }`}
-                  >
-                    <div className='flex items-start gap-3'>
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5 flex-shrink-0 mt-1">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
-                      </svg>
-                      <div className='flex-1 min-w-0'>
-                        <p className='font-medium text-sm line-clamp-2 mb-1'>
-                          {chat.question}
-                        </p>
-                        <div className='flex items-center justify-between'>
-                          <span className={`text-xs ${selectedChat?.id === chat.id ? 'text-white/80' : 'text-gray-500'}`}>
-                            {chat.timestamp}
-                          </span>
-                          <span className={`text-xs px-2 py-1 rounded-full ${
-                            selectedChat?.id === chat.id
-                              ? 'bg-white/20'
-                              : 'bg-[#1f235a]/10 text-[#1f235a]'
-                          }`}>
-                            {chat.category}
-                          </span>
+                {filteredHistory.length === 0 ? (
+                  <div className='text-center py-10 text-gray-500'>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-12 mx-auto mb-4 text-gray-300">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
+                    </svg>
+                    <p className='font-medium text-gray-700 mb-1'>Aucune conversation trouvée</p>
+                    <p className='text-sm text-gray-500'>Commencez à discuter avec l'assistant</p>
+                  </div>
+                ) : (
+                  filteredHistory.map((chat, index) => (
+                    <motion.div
+                      key={chat.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      onClick={() => setSelectedChat(chat)}
+                      className={`p-4 rounded-xl cursor-pointer transition-all duration-300 ${
+                        selectedChat?.id === chat.id
+                          ? 'bg-gradient-to-r from-[#1f235a] to-[#292f81] text-white shadow-lg'
+                          : 'bg-gray-50 hover:bg-gray-100 text-gray-800'
+                      }`}
+                    >
+                      <div className='flex items-start gap-3'>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5 flex-shrink-0 mt-1">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
+                        </svg>
+                        <div className='flex-1 min-w-0'>
+                          <p className='font-medium text-sm line-clamp-2 mb-1'>
+                            {chat.question || 'Question sans titre'}
+                          </p>
+                          <div className='flex items-center justify-between mt-2'>
+                            <span className={`text-xs ${selectedChat?.id === chat.id ? 'text-white/80' : 'text-gray-500'}`}>
+                              {new Date(chat.timestamp).toLocaleString('fr-FR', {
+                                day: '2-digit',
+                                month: 'short',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </span>
+                            <span className={`text-xs px-2 py-1 rounded-full ${
+                              selectedChat?.id === chat.id
+                                ? 'bg-white/20'
+                                : 'bg-[#1f235a]/10 text-[#1f235a]'
+                            }`}>
+                              {chat.category || 'Général'}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  ))
+                )}
               </div>
             </motion.div>
           </div>
@@ -202,45 +290,45 @@ const Historique = () => {
                       </div>
                       <div className='flex-1'>
                         <p className='text-sm text-gray-500 mb-2'>Réponse de l'assistant</p>
-                        <p className='text-gray-700 leading-relaxed'>{selectedChat.response}</p>
+                        <p className='text-gray-700 leading-relaxed whitespace-pre-wrap'>{selectedChat.response}</p>
                       </div>
                     </div>
                   </div>
 
-                  {/* Related Offers */}
-                  {selectedChat.offers.length > 0 && (
-                    <div>
+                  {/* Sources */}
+                  {selectedChat.sources && selectedChat.sources.length > 0 && (
+                    <div className='mb-6'>
                       <h3 className='text-xl font-semibold text-[#1f235a] mb-4 flex items-center gap-2'>
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6Z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
                         </svg>
-                        Offres Recommandées
+                        Sources ({selectedChat.sources.length})
                       </h3>
-                      <div className='space-y-4'>
-                        {selectedChat.offers.map((offer, index) => (
-                          <motion.div
-                            key={index}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: index * 0.1 }}
-                            className='flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-[#1f235a] to-[#292f81] text-white shadow-lg'
-                          >
-                            <div className='bg-white p-3 rounded-lg'>
-                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="#1f235a" className="size-8">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M21 11.25v8.25a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 1 0 9.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1 1 14.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" />
-                              </svg>
-                            </div>
-                            <div className='flex-1'>
-                              <h4 className='font-semibold text-lg mb-1'>{offer.title}</h4>
-                              <p className='text-sm text-white/90'>En convension avec : {offer.partner}</p>
-                              <p className='text-sm text-white/80'>{offer.description}</p>
-                            </div>
-                            <button className='bg-white text-[#1f235a] px-4 py-2 rounded-lg font-medium hover:bg-gray-100 transition-all'>
-                              Voir
-                            </button>
-                          </motion.div>
+                      <div className='space-y-3'>
+                        {selectedChat.sources.slice(0, 5).map((source, index) => (
+                          <div key={index} className='p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-[#1f235a] transition-colors'>
+                            <p className='text-sm text-gray-700'>
+                              {typeof source === 'string' 
+                                ? source 
+                                : source.page_content 
+                                  ? source.page_content.substring(0, 200) + '...'
+                                  : 'Source non disponible'}
+                            </p>
+                            {source.metadata?.source && (
+                              <p className='text-xs text-gray-500 mt-2 flex items-center gap-1'>
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                </svg>
+                                {source.metadata.source}
+                              </p>
+                            )}
+                          </div>
                         ))}
+                        {selectedChat.sources.length > 5 && (
+                          <p className='text-sm text-gray-500 italic text-center'>
+                            +{selectedChat.sources.length - 5} autres sources...
+                          </p>
+                        )}
                       </div>
                     </div>
                   )}
@@ -251,10 +339,10 @@ const Historique = () => {
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                       </svg>
-                      {selectedChat.timestamp}
+                      {new Date(selectedChat.timestamp).toLocaleString('fr-FR')}
                     </span>
-                    <span className='px-3 py-1 bg-[#1f235a]/10 text-[#1f235a] rounded-full'>
-                      {selectedChat.category}
+                    <span className='px-3 py-1 bg-[#1f235a]/10 text-[#1f235a] rounded-full font-medium'>
+                      {selectedChat.category || 'Général'}
                     </span>
                   </div>
                 </motion.div>
@@ -274,21 +362,6 @@ const Historique = () => {
             </AnimatePresence>
           </div>
         </div>
-
-        {/* Empty State */}
-        {filteredHistory.length === 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className='bg-white rounded-2xl shadow-lg p-12 text-center mt-8'
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-20 mx-auto text-gray-300 mb-4">
-              <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-            </svg>
-            <h3 className='text-2xl font-semibold text-gray-700 mb-2'>Aucun résultat trouvé</h3>
-            <p className='text-gray-500'>Essayez une recherche différente</p>
-          </motion.div>
-        )}
       </div>
     </div>
   )

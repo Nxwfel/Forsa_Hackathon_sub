@@ -12,7 +12,6 @@ import Particles from '../Components/Particles.jsx';
 import {Link as Scroll} from 'react-scroll';
 import {Link} from 'react-router-dom'
 const HomePage = () => {
-    const [showchatbot, setShowchatbot] = useState(false);
 
 
 // Alternative with image sources
@@ -112,10 +111,8 @@ useEffect(() => {
             <div class="flex items-center justify-center mt-[5vh]">
                 
             <div class="relative group">
+                <Link to={'/chatbot'}>
                 <button
-                onClick={() => {
-                    setShowchatbot(!showchatbot)
-                }}
                 class="relative inline-block p-px font-semibold leading-6 text-white bg-[#17c769] shadow-2xl cursor-pointer rounded-xl shadow-zinc-900 transition-transform duration-300 ease-in-out hover:scale-105 active:scale-95"
                 >
                 <span
@@ -143,50 +140,10 @@ useEffect(() => {
                     </div>
                 </span>
                 </button>
+                </Link>
             </div>
             </div>
-            {showchatbot && (
-             <div  className='h-[50vh] w-[27vw] rounded-xl border border-neutral-400/30 m-3 shadow-lg flex flex-col justify-between items-center absolute right-0 bottom-0'>
-              <div className='h-[8vh] w-full border-b border-b-gray-200 justify-between items-center flex'>
-                 <div className='flex justify-center items-center'>
-                    <img src={Robot} alt="" className='size-6 mx-3'/>
-                    <h1>Assistant Intelligent</h1>
-                 </div>
-                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor"
-                  onClick={()=>{
-                    setShowchatbot(!showchatbot);
-                 }} 
-                 className="size-[2vw] mr-3 cursor-pointer hover:stroke-red-700">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                 </svg>
-              </div>
-              <div className='w-full px-1 flex justify-between items-center'>
-                <div class="relative w-60 group">
-                    <span
-                        class="absolute -left-0.5 top-2 bottom-2 w-1.5 rounded bg-gradient-to-b from-[#088141] to-[#22dd79] opacity-70 transition-all duration-300 group-focus-within:opacity-100"
-                    ></span>
-                    <input
-                        type="text"
-                        id="input"
-                        placeholder=""
-                        class="peer w-full pl-6 pr-4 pt-6 pb-2 text-sm text-gray-800 bg-white  border-gray-200 rounded-lg focus:border-transparent focus:ring-2 focus:ring-indigo-300 focus:outline-none transition-all duration-300 delay-200 placeholder-transparent"
-                    />
-                    <label
-                        for="input"
-                        class="absolute left-6 top-3.5 text-sm text-gray-500 transition-all duration-200 ease-in-out peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:top-1 peer-focus:text-sm peer-focus:text-indigo-500 peer-focus:font-semibold cursor-text"
-                    >
-                        Write Here
-                    </label>
-                    </div>
-              <div className='h-[6vh] w-[7vh]'>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor" className="size-[3vw] stroke-[#088141] hover:scale-110 hover:-rotate-12 cursor-pointer transition-all duration-300">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="m12.75 15 3-3m0 0-3-3m3 3h-7.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                </svg>
-              </div>
-             </div>
-              
-            </div>
-            )}
+            
 
             <div style={{ height: '200px', position: 'relative', overflow: 'hidden'}} className='w-[80vw] mt-[15vh]'>
       {/* Basic horizontal loop */}
