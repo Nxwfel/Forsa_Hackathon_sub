@@ -87,7 +87,7 @@ useEffect(() => {
           animate={{y:0, opacity:1}}
           whileHover={{scale:1.1}}
             src={Logo} alt=""  className='size-[5vw] mt-[2vh] cursor-pointer'/>
-            <Link to={'/chatbot'}>
+            <Link to={'/dashboard'}>
             <motion.h1
             initial={{scale:1,y:-10, opacity:0}}
           animate={{y:0, opacity:1}}
@@ -111,7 +111,7 @@ useEffect(() => {
             <div class="flex items-center justify-center mt-[5vh]">
                 
             <div class="relative group">
-                <Link to={'/chatbot'}>
+                <Link to={'/dashboard'}>
                 <button
                 class="relative inline-block p-px font-semibold leading-6 text-white bg-[#17c769] shadow-2xl cursor-pointer rounded-xl shadow-zinc-900 transition-transform duration-300 ease-in-out hover:scale-105 active:scale-95"
                 >

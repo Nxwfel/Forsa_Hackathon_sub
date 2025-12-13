@@ -8,6 +8,7 @@ import DataIntegration from "./Components/DataIntegration.jsx";
 import SearchEngine from "./Components/SearchEngine.jsx";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChatProvider } from "./Contexts/ChatContext.jsx";
+import {Link} from 'react-router-dom'
 
 const NAV = [
     {
@@ -84,9 +85,11 @@ function App() {
                     transition={{ type: "spring", stiffness: 260, damping: 22 }}
                     className="h-full rounded-2xl border border-gray-300/60 bg-white shadow-sm overflow-hidden flex flex-col"
                 >
+                  <Link to={'/'}>
                     <div className="flex items-center justify-center pt-5 pb-4">
                         <img src={logo} alt="logo" className="w-12 h-12 object-contain" />
                     </div>
+                    </Link>
 
                     <nav className="flex-1 mt-[13vh] px-2">
                         <ul className="flex flex-col gap-3 mt-4">

@@ -4,6 +4,9 @@ import { motion, AnimatePresence } from "framer-motion";
 // ---------- Config ----------
 const API_BASE = "https://forsahackathonbackendek.onrender.com";
 
+// IMPORTANT: your document server
+const DOCUMENTS_BASE = "http://192.168.85.94:8000/documents/";
+
 const ENDPOINTS = {
   offre: "/offres/all",
   convention: "/conventions/all",
@@ -90,10 +93,82 @@ function uniqBy(arr, keyFn) {
   return out;
 }
 
+// --- build a doc object even if fields are top-level (your example JSON) ---
+function extractDoc(raw, possibleDoc) {
+  // If API already gives nested doc object
+  if (possibleDoc && typeof possibleDoc === "object") {
+    const sp = possibleDoc.source_path ?? possibleDoc.path ?? null;
+    if (sp) {
+      return {
+        document_type: possibleDoc.document_type ?? null,
+        document_name: possibleDoc.document_name ?? null,
+        source_path: sp,
+      };
+    }
+  }
+
+  // If API gives doc fields at top-level (your example)
+  const sp2 = raw?.source_path ?? raw?.path ?? null;
+  if (sp2) {
+    return {
+      document_type: raw?.document_type ?? null,
+      document_name: raw?.document_name ?? null,
+      source_path: sp2,
+    };
+  }
+
+  return null;
+}
+
+// --- convert "..\\data\\Guide NGBSS\\file.pdf" => "Guide NGBSS/file.pdf" ---
+function stripToRelativeDocPath(sourcePath) {
+  if (!sourcePath) return "";
+  let s = String(sourcePath).trim();
+
+  // normalize slashes
+  s = s.replace(/\\/g, "/");
+
+  // remove Windows drive if exists: "C:/..."
+  s = s.replace(/^[a-zA-Z]:\//, "");
+
+  // remove leading ./ or ../
+  s = s.replace(/^(\.\/)+/, "");
+  s = s.replace(/^(\.\.\/)+/, "");
+
+  // if contains "/data/", keep only after it
+  const idx = s.toLowerCase().indexOf("/data/");
+  if (idx >= 0) s = s.slice(idx + "/data/".length);
+
+  // also handle if it starts with "data/"
+  s = s.replace(/^data\//i, "");
+
+  // remove leading slashes
+  s = s.replace(/^\/+/, "");
+
+  return s;
+}
+
+// --- encode each segment but keep "/" separators ---
+function encodePathPreservingSlashes(path) {
+  return path
+      .split("/")
+      .filter(Boolean)
+      .map((seg) => encodeURIComponent(seg))
+      .join("/");
+}
+
+function buildDocumentUrl(sourcePath) {
+  const rel = stripToRelativeDocPath(sourcePath);
+  if (!rel) return null;
+  const encoded = encodePathPreservingSlashes(rel);
+  return `${DOCUMENTS_BASE}${encoded}`;
+}
+
 // ---------- Mapping (API -> UI unified item) ----------
 function mapToUnifiedItem(type, raw) {
   if (type === "offre") {
-    const doc = raw.offer_doc || raw.doc || raw.document || null;
+    const possibleDoc = raw.offer_doc || raw.doc || raw.document || null;
+    const doc = extractDoc(raw, possibleDoc);
     const title = raw.offer_name || raw.name || raw.title || "Sans titre";
     return {
       type,
@@ -108,19 +183,14 @@ function mapToUnifiedItem(type, raw) {
         price_info: raw.price_info ?? null,
         conditions: raw.conditions ?? null,
       },
-      doc: doc
-          ? {
-            document_type: doc.document_type,
-            document_name: doc.document_name,
-            source_path: doc.source_path,
-          }
-          : null,
+      doc,
       raw,
     };
   }
 
   if (type === "convention") {
-    const doc = raw.convention_doc || raw.doc || raw.document || null;
+    const possibleDoc = raw.convention_doc || raw.doc || raw.document || null;
+    const doc = extractDoc(raw, possibleDoc);
     const title = raw.convention_name || raw.name || raw.title || "Sans titre";
     return {
       type,
@@ -139,19 +209,14 @@ function mapToUnifiedItem(type, raw) {
         conditions: raw.conditions ?? null,
         applicable_offers: safeArray(raw.applicable_offers),
       },
-      doc: doc
-          ? {
-            document_type: doc.document_type,
-            document_name: doc.document_name,
-            source_path: doc.source_path,
-          }
-          : null,
+      doc,
       raw,
     };
   }
 
   if (type === "guide") {
-    const doc = raw.guide_doc || raw.doc || raw.document || null;
+    const possibleDoc = raw.guide_doc || raw.doc || raw.document || null;
+    const doc = extractDoc(raw, possibleDoc);
     const title = raw.guide_name || raw.name || raw.title || "Sans titre";
     return {
       type,
@@ -165,19 +230,14 @@ function mapToUnifiedItem(type, raw) {
         outputs: safeArray(raw.outputs),
         step_by_step: safeArray(raw.step_by_step),
       },
-      doc: doc
-          ? {
-            document_type: doc.document_type,
-            document_name: doc.document_name,
-            source_path: doc.source_path,
-          }
-          : null,
+      doc,
       raw,
     };
   }
 
   if (type === "equipment") {
-    const doc = raw.equipment_doc || raw.doc || raw.document || null;
+    const possibleDoc = raw.equipment_doc || raw.doc || raw.document || null;
+    const doc = extractDoc(raw, possibleDoc);
     const title = raw.equipment_name || raw.name || raw.title || "Sans titre";
     return {
       type,
@@ -193,13 +253,7 @@ function mapToUnifiedItem(type, raw) {
         conditions: raw.conditions ?? null,
         compatible_offers: safeArray(raw.compatible_offers),
       },
-      doc: doc
-          ? {
-            document_type: doc.document_type,
-            document_name: doc.document_name,
-            source_path: doc.source_path,
-          }
-          : null,
+      doc,
       raw,
     };
   }
@@ -210,7 +264,7 @@ function mapToUnifiedItem(type, raw) {
     summary: raw?.summary ?? "",
     keywords: safeArray(raw?.keywords),
     meta: {},
-    doc: raw?.doc || raw?.document || null,
+    doc: extractDoc(raw, raw?.doc || raw?.document || null),
     raw,
   };
 }
@@ -301,7 +355,7 @@ const Search = () => {
     setTimeout(() => setToast((p) => ({ ...p, visible: false })), 3000);
   };
 
-  const [activeType, setActiveType] = useState("all"); 
+  const [activeType, setActiveType] = useState("all");
   const [query, setQuery] = useState("");
 
   const [offerFilters, setOfferFilters] = useState({
@@ -358,7 +412,7 @@ const Search = () => {
   const unified = useMemo(() => {
     const list = [];
     for (const t of targets) list.push(...raw[t].map((r) => mapToUnifiedItem(t, r)));
-    return uniqBy(list, (x) => `${x.type}|${x.title}|${x.doc?.document_name || ""}`);
+    return uniqBy(list, (x) => `${x.type}|${x.title}|${x.doc?.document_name || ""}|${x.doc?.source_path || ""}`);
   }, [raw, targets]);
 
   const filteredItems = useMemo(() => unified.filter((x) => clientMatch(x, query)), [unified, query]);
@@ -366,30 +420,27 @@ const Search = () => {
   const activeFilterCount = useMemo(() => {
     const base = [query, activeType !== "all" ? activeType : ""].filter(Boolean).length;
 
-    const offerCount =
-        [offerFilters.customer_segment, offerFilters.geography, offerFilters.start_date, offerFilters.end_date].filter(
-            (v) => v && v.toString().trim() !== ""
-        ).length;
+    const offerCount = [offerFilters.customer_segment, offerFilters.geography, offerFilters.start_date, offerFilters.end_date]
+        .filter((v) => v && v.toString().trim() !== "")
+        .length;
 
-    const convCount =
-        [
-          conventionFilters.partner_name,
-          conventionFilters.sector,
-          conventionFilters.geography,
-          conventionFilters.start_date,
-          conventionFilters.end_date,
-          conventionFilters.applicable_offers,
-        ].filter((v) => v && v.toString().trim() !== "").length;
+    const convCount = [
+      conventionFilters.partner_name,
+      conventionFilters.sector,
+      conventionFilters.geography,
+      conventionFilters.start_date,
+      conventionFilters.end_date,
+      conventionFilters.applicable_offers,
+    ].filter((v) => v && v.toString().trim() !== "").length;
 
-    const guideCount =
-        [guideFilters.module, guideFilters.operation_name].filter((v) => v && v.toString().trim() !== "").length;
+    const guideCount = [guideFilters.module, guideFilters.operation_name]
+        .filter((v) => v && v.toString().trim() !== "")
+        .length;
 
-    const equipCount =
-        [equipmentFilters.category, equipmentFilters.brand, equipmentFilters.model, equipmentFilters.compatible_offers].filter(
-            (v) => v && v.toString().trim() !== ""
-        ).length;
+    const equipCount = [equipmentFilters.category, equipmentFilters.brand, equipmentFilters.model, equipmentFilters.compatible_offers]
+        .filter((v) => v && v.toString().trim() !== "")
+        .length;
 
-    // count only what matters for current mode
     if (activeType === "offre") return base + offerCount;
     if (activeType === "convention") return base + convCount;
     if (activeType === "guide") return base + guideCount;
@@ -434,13 +485,11 @@ const Search = () => {
     }
   }
 
-  // Initial load
   useEffect(() => {
     fetchAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Debounce refresh when inputs change
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => fetchAll(), 350);
@@ -448,7 +497,7 @@ const Search = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeType, query, offerFilters, conventionFilters, guideFilters, equipmentFilters]);
 
-  // ---------- UI handlers (Search99 style) ----------
+  // ---------- UI handlers ----------
   const handleQuickKeyword = (keyword) => setQuery(keyword);
 
   const handleSearchClick = () => {
@@ -456,18 +505,19 @@ const Search = () => {
     fetchAll();
   };
 
+  // ✅ "Voir" now opens the downloadable document URL
   const handleViewItem = (item) => {
-    showToast(`Aperçu: "${item.title}"`, "info");
-  };
-
-  const handleOpenDoc = (item) => {
-    if (!item?.doc?.source_path) {
-      showToast("Aucun lien disponible pour cet élément.", "error");
+    const url = buildDocumentUrl(item?.doc?.source_path);
+    if (!url) {
+      showToast("Aucun document disponible pour cet élément.", "error");
       return;
     }
-    window.open(item.doc.source_path, "_blank");
+    window.open(url, "_blank", "noopener,noreferrer");
     showToast("Ouverture du document…", "success");
   };
+
+  // Keep this button too (uses same logic)
+  const handleOpenDoc = (item) => handleViewItem(item);
 
   const resetAll = () => {
     setQuery("");
@@ -553,7 +603,6 @@ const Search = () => {
       );
     }
 
-    // all mode
     return (
         <>
           <p className="text-xs uppercase tracking-wide text-[#088141] mb-2">Partenaire (Conventions)</p>
@@ -656,7 +705,6 @@ const Search = () => {
       );
     }
 
-    // all mode
     return (
         <>
           <p className="text-xs uppercase tracking-wide text-[#088141] mb-2">Géographie (Offres + Conventions)</p>
@@ -759,9 +807,7 @@ const Search = () => {
                     exit={{ opacity: 0, x: 40, y: -10 }}
                     transition={{ duration: 0.25, ease: "easeOut" }}
                 >
-                  <div
-                      className={`min-w-[260px] max-w-xs px-4 py-3 rounded-xl shadow-lg flex items-start gap-3 ${toastColors[toast.type]}`}
-                  >
+                  <div className={`min-w-[260px] max-w-xs px-4 py-3 rounded-xl shadow-lg flex items-start gap-3 ${toastColors[toast.type]}`}>
                 <span className="mt-0.5">
                   {toast.type === "success" && "✅"}
                   {toast.type === "error" && "⚠️"}
@@ -773,7 +819,6 @@ const Search = () => {
             )}
           </AnimatePresence>
 
-          {/* MAIN CONTENT WRAPPER */}
           <div className="mx-auto w-full max-w-6xl h-full flex flex-col gap-6">
             {/* Header */}
             <motion.header
@@ -803,7 +848,7 @@ const Search = () => {
               </motion.div>
             </motion.header>
 
-            {/* Search Bar + quick tags */}
+            {/* Search Bar */}
             <motion.div
                 className="bg-white/90 border border-[#1F235A1A] rounded-2xl p-4 md:p-5 shadow-sm w-full backdrop-blur-sm space-y-3"
                 initial={{ opacity: 0, y: 15 }}
@@ -815,11 +860,7 @@ const Search = () => {
                   <motion.span
                       className="absolute left-3 top-1/2 -translate-y-1/2 text-base"
                       animate={loading ? { rotate: 15 } : { rotate: 0 }}
-                      transition={
-                        loading
-                            ? { repeat: Infinity, repeatType: "reverse", duration: 0.4, ease: "easeInOut" }
-                            : { duration: 0.2 }
-                      }
+                      transition={loading ? { repeat: Infinity, repeatType: "reverse", duration: 0.4, ease: "easeInOut" } : { duration: 0.2 }}
                   >
                     🔍
                   </motion.span>
@@ -852,7 +893,6 @@ const Search = () => {
               </div>
 
               <div className="flex flex-wrap items-center justify-between gap-3">
-                {/* Quick tags */}
                 <div className="flex flex-wrap gap-2 text-xs">
                   {["fibre", "éducation", "administration", "cloud", "cisco", "billing"].map((k) => (
                       <motion.button
@@ -867,14 +907,11 @@ const Search = () => {
                   ))}
                 </div>
 
-                {/* Small info pill */}
                 <div className="flex items-center gap-2 text-[11px] text-[#666]">
                 <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#1F235A0D] text-[#1F235A] text-[10px] font-semibold">
                   i
                 </span>
-                  <span>
-                  {activeFilterCount > 0 ? `${activeFilterCount} filtre(s) actif(s)` : "Aucun filtre avancé appliqué"}
-                </span>
+                  <span>{activeFilterCount > 0 ? `${activeFilterCount} filtre(s) actif(s)` : "Aucun filtre avancé appliqué"}</span>
                 </div>
               </div>
 
@@ -889,9 +926,7 @@ const Search = () => {
                           onClick={() => setActiveType(t)}
                           className={[
                             "px-3 py-1 rounded-full border text-xs transition-colors",
-                            active
-                                ? "border-[#08814166] bg-[#08814112] text-[#088141]"
-                                : "border-[#1F235A26] bg-white hover:bg-[#F0F3FA] text-[#1F235A]",
+                            active ? "border-[#08814166] bg-[#08814112] text-[#088141]" : "border-[#1F235A26] bg-white hover:bg-[#F0F3FA] text-[#1F235A]",
                           ].join(" ")}
                           title={`Voir: ${TYPE_LABELS[t]}`}
                           whileHover={{ y: -1 }}
@@ -911,10 +946,7 @@ const Search = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, ease: "easeOut", delay: 0.2 }}
             >
-              <motion.div
-                  className="bg-white rounded-2xl p-4 border border-[#1F235A14] shadow-sm"
-                  whileHover={{ y: -2, boxShadow: "0 8px 20px rgba(31,35,90,0.07)" }}
-              >
+              <motion.div className="bg-white rounded-2xl p-4 border border-[#1F235A14] shadow-sm" whileHover={{ y: -2, boxShadow: "0 8px 20px rgba(31,35,90,0.07)" }}>
                 <p className="text-xs uppercase tracking-wide text-[#088141] mb-2">Type</p>
                 <select
                     value={activeType}
@@ -933,24 +965,15 @@ const Search = () => {
                 </div>
               </motion.div>
 
-              <motion.div
-                  className="bg-white rounded-2xl p-4 border border-[#1F235A14] shadow-sm"
-                  whileHover={{ y: -2, boxShadow: "0 8px 20px rgba(31,35,90,0.07)" }}
-              >
+              <motion.div className="bg-white rounded-2xl p-4 border border-[#1F235A14] shadow-sm" whileHover={{ y: -2, boxShadow: "0 8px 20px rgba(31,35,90,0.07)" }}>
                 <FilterCard2 />
               </motion.div>
 
-              <motion.div
-                  className="bg-white rounded-2xl p-4 border border-[#1F235A14] shadow-sm"
-                  whileHover={{ y: -2, boxShadow: "0 8px 20px rgba(31,35,90,0.07)" }}
-              >
+              <motion.div className="bg-white rounded-2xl p-4 border border-[#1F235A14] shadow-sm" whileHover={{ y: -2, boxShadow: "0 8px 20px rgba(31,35,90,0.07)" }}>
                 <FilterCard3 />
               </motion.div>
 
-              <motion.div
-                  className="bg-white rounded-2xl p-4 border border-[#1F235A14] shadow-sm"
-                  whileHover={{ y: -2, boxShadow: "0 8px 20px rgba(31,35,90,0.07)" }}
-              >
+              <motion.div className="bg-white rounded-2xl p-4 border border-[#1F235A14] shadow-sm" whileHover={{ y: -2, boxShadow: "0 8px 20px rgba(31,35,90,0.07)" }}>
                 <FilterCard4 />
               </motion.div>
             </motion.div>
@@ -979,11 +1002,7 @@ const Search = () => {
               {loading && <p className="text-sm text-[#666]">Chargement…</p>}
 
               {!loading && filteredItems.length === 0 && (
-                  <motion.p
-                      className="text-sm text-[#666]"
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                  >
+                  <motion.p className="text-sm text-[#666]" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
                     Aucun résultat. Essayez d&apos;élargir votre recherche ou de réinitialiser certains filtres.
                   </motion.p>
               )}
@@ -1004,9 +1023,7 @@ const Search = () => {
                                           : "";
 
                       const dateLine =
-                          item.meta?.start_date || item.meta?.end_date
-                              ? `${item.meta?.start_date || "—"} → ${item.meta?.end_date || "—"}`
-                              : null;
+                          item.meta?.start_date || item.meta?.end_date ? `${item.meta?.start_date || "—"} → ${item.meta?.end_date || "—"}` : null;
 
                       return (
                           <motion.div
@@ -1038,35 +1055,21 @@ const Search = () => {
 
                               <div className="flex flex-wrap gap-2 text-[11px] text-[#555] my-3">
                                 {item.meta?.geography && (
-                                    <span className="px-2 py-1 bg-white border border-[#E0E3EE] rounded-full">
-                              Géographie : {item.meta.geography}
-                            </span>
+                                    <span className="px-2 py-1 bg-white border border-[#E0E3EE] rounded-full">Géographie : {item.meta.geography}</span>
                                 )}
                                 {item.meta?.sector && (
-                                    <span className="px-2 py-1 bg-white border border-[#E0E3EE] rounded-full">
-                              Secteur : {item.meta.sector}
-                            </span>
+                                    <span className="px-2 py-1 bg-white border border-[#E0E3EE] rounded-full">Secteur : {item.meta.sector}</span>
                                 )}
                                 {item.meta?.partner_name && (
-                                    <span className="px-2 py-1 bg-white border border-[#E0E3EE] rounded-full">
-                              Partenaire : {item.meta.partner_name}
-                            </span>
+                                    <span className="px-2 py-1 bg-white border border-[#E0E3EE] rounded-full">Partenaire : {item.meta.partner_name}</span>
                                 )}
                                 {item.meta?.brand && (
-                                    <span className="px-2 py-1 bg-white border border-[#E0E3EE] rounded-full">
-                              Marque : {item.meta.brand}
-                            </span>
+                                    <span className="px-2 py-1 bg-white border border-[#E0E3EE] rounded-full">Marque : {item.meta.brand}</span>
                                 )}
                                 {item.meta?.module && (
-                                    <span className="px-2 py-1 bg-white border border-[#E0E3EE] rounded-full">
-                              Module : {item.meta.module}
-                            </span>
+                                    <span className="px-2 py-1 bg-white border border-[#E0E3EE] rounded-full">Module : {item.meta.module}</span>
                                 )}
-                                {dateLine && (
-                                    <span className="px-2 py-1 bg-white border border-[#E0E3EE] rounded-full">
-                              {dateLine}
-                            </span>
-                                )}
+                                {dateLine && <span className="px-2 py-1 bg-white border border-[#E0E3EE] rounded-full">{dateLine}</span>}
                               </div>
 
                               {item.summary ? (
@@ -1100,21 +1103,12 @@ const Search = () => {
                     })}
               </div>
 
-              {/* tiny footer stats */}
               {!loading && (
                   <div className="mt-5 text-[11px] text-[#666] flex flex-wrap gap-3">
-                <span>
-                  Offres: <b>{counts.offre}</b>
-                </span>
-                    <span>
-                  Conventions: <b>{counts.convention}</b>
-                </span>
-                    <span>
-                  Guides: <b>{counts.guide}</b>
-                </span>
-                    <span>
-                  Équipements: <b>{counts.equipment}</b>
-                </span>
+                    <span>Offres: <b>{counts.offre}</b></span>
+                    <span>Conventions: <b>{counts.convention}</b></span>
+                    <span>Guides: <b>{counts.guide}</b></span>
+                    <span>Équipements: <b>{counts.equipment}</b></span>
                   </div>
               )}
             </motion.div>
