@@ -5,12 +5,11 @@ import { RouterProvider } from "react-router/dom";
 import App from "./App.jsx";
 import Preloader from "./Components/Preloader.jsx";
 import LandingPage from "./Pages/LandingPage.jsx";
-import Chatbot from "./Pages/Chatbot.jsx";
 
 const router = createBrowserRouter([
   { path: "/",element: <LandingPage/>, },
    {path:'/Dashboard',element: <App/>},
-   { path: "/chatbot",element: <Chatbot/>, },
+   
 ]);
 
 

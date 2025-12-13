@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 const API_BASE = "https://forsahackathonbackendek.onrender.com";
 
 // IMPORTANT: your document server
-const DOCUMENTS_BASE = "http://192.168.85.94:8000/documents/";
+const DOCUMENTS_BASE = "http://10.34.132.94:8000/documents/";
 
 const ENDPOINTS = {
   offre: "/offres/all",

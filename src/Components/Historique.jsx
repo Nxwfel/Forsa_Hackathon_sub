@@ -12,7 +12,7 @@ const Historique = () => {
   const { messages } = useChat();
 
   // Backend URL from environment or default
-  const BACKEND_URL = process.env.REACT_APP_API_URL || 'http://192.168.85.94:8000';
+  const BACKEND_URL = process.env.REACT_APP_API_URL || 'http://10.34.132.94:8000';
 
  // Update your useEffect hook to handle CORS issues:
 useEffect(() => {
