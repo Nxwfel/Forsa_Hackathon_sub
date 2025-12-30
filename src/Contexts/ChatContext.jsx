@@ -22,7 +22,7 @@ export const ChatProvider = ({ children }) => {
   const reconnectAttemptsRef = useRef(0);
   const shouldReconnectRef = useRef(true);
 
-  const WS_URL = process.env.REACT_APP_WS_URL || 'ws://192.168.85.94:8000/ws/chat';
+  const WS_URL = process.env.REACT_APP_WS_URL || 'ws://10.34.132.94:8000/ws/chat';
   const MAX_RECONNECT_ATTEMPTS = 5;
   const RECONNECT_DELAY = 3000;
 

@@ -1,10 +1,10 @@
 import React from 'react'
 import {motion , AnimatePresence} from 'framer-motion'
-import Algerie_telecom from '../assets/Algerie_Telecom.svg'
+import Algerie_telecom from '../Assets/Algerie_Telecom.svg'
 const Preloader = () => {
   return (
     <AnimatePresence>
-        <div className='h-screen w-screen justify-center items-center flex flex-col bg-neutral-900'>
+        <div className='h-screen w-screen justify-center items-center flex flex-col bg-white'>
             <motion.img
             initial={{opacity:0, scale:0.5 , y:100}}
             animate={{opacity:1, scale:1 , y:0}}
