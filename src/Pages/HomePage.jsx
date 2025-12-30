@@ -5,7 +5,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Logo from '../Assets/Algerie_Telecom.svg'
 import LogoLoop from '../Animations/LogoLoop.jsx';
 import Ensia from '../Assets/ensia.png'
-import Huawei from '../Assets/huawei.svg'
+import Huawei from '../Assets/Huawei.svg'
 import AlgerieTelecom from '../Assets/Algerie_Telecom.svg'
 import Particles from '../Components/Particles.jsx';
 import Preloader from '../Components/Preloader.jsx'
